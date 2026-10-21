@@ -1,7 +1,5 @@
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router";
 import { useToday } from "../../app/useToday";
 import { EmptyState } from "../../components/EmptyState";
 import { ProgressRing } from "../../components/ProgressRing";
@@ -11,7 +9,7 @@ import { useCompletions, useHabits } from "../../data/useData";
 import { isDone } from "../../domain/completions";
 import { parseDateKey } from "../../domain/dates";
 import type { TodayProgress } from "../../domain/stats";
-import { NEW_HABIT_PARAM } from "../habits/HabitsScreen";
+import { AddHabitLink } from "../habits/AddHabitLink";
 import { HabitTile } from "./HabitTile";
 import { LogSheet } from "./LogSheet";
 import { buildTodayList, type TodayItem } from "./todayList";
@@ -63,17 +61,7 @@ export function TodayScreen() {
   return (
     <Screen title="Today" subtitle={format(parseDateKey(today), "EEEE, d MMMM")}>
       {list && habits?.length === 0 && (
-        <EmptyState
-          action={
-            <Link
-              to={`/habits?${NEW_HABIT_PARAM}`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 active:bg-emerald-800 dark:bg-emerald-600"
-            >
-              <Plus aria-hidden="true" className="size-5" />
-              Add your first habit
-            </Link>
-          }
-        >
+        <EmptyState action={<AddHabitLink />}>
           Nothing to track yet. Add a habit and it will show up here every day it’s due.
         </EmptyState>
       )}

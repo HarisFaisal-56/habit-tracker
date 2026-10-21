@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addDays,
+  addMonths,
   daysBetween,
   eachDay,
+  endOfMonth,
   getWeekday,
   isDateKey,
   maxDateKey,
   minDateKey,
   parseDateKey,
+  startOfMonth,
   startOfWeek,
   toDateKey,
   today,
@@ -195,5 +198,32 @@ describe("minDateKey / maxDateKey", () => {
     expect(minDateKey("2025-01-10", "2024-12-31")).toBe("2024-12-31");
     expect(maxDateKey("2025-01-10", "2024-12-31")).toBe("2025-01-10");
     expect(maxDateKey("2025-01-10", "2025-01-10")).toBe("2025-01-10");
+  });
+});
+
+describe("startOfMonth / endOfMonth", () => {
+  it.each([
+    ["2025-01-15", "2025-01-01", "2025-01-31"],
+    ["2025-02-01", "2025-02-01", "2025-02-28"],
+    ["2024-02-10", "2024-02-01", "2024-02-29"], // leap year
+    ["2025-04-30", "2025-04-01", "2025-04-30"],
+    ["2025-12-31", "2025-12-01", "2025-12-31"],
+    ["2025-03-09", "2025-03-01", "2025-03-31"], // DST change inside the month
+  ])("%s is in the month %s to %s", (key, start, end) => {
+    expect(startOfMonth(key)).toBe(start);
+    expect(endOfMonth(key)).toBe(end);
+  });
+});
+
+describe("addMonths", () => {
+  it.each([
+    ["2025-01-01", 1, "2025-02-01"],
+    ["2025-12-01", 1, "2026-01-01"],
+    ["2025-01-01", -1, "2024-12-01"],
+    ["2025-03-01", -12, "2024-03-01"],
+    ["2025-01-31", 1, "2025-02-28"], // clamps to the last day
+    ["2024-01-31", 1, "2024-02-29"],
+  ])("%s %+d months is %s", (key, amount, expected) => {
+    expect(addMonths(key, amount)).toBe(expected);
   });
 });

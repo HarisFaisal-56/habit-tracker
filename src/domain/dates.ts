@@ -1,9 +1,12 @@
 import {
   addDays as addDaysToDate,
+  addMonths as addMonthsToDate,
   differenceInCalendarDays,
+  endOfMonth as endOfMonthDate,
   format,
   isValid,
   parse,
+  startOfMonth as startOfMonthDate,
   startOfWeek as startOfWeekDate,
 } from "date-fns";
 
@@ -66,6 +69,21 @@ export function getWeekday(key: DateKey): Weekday {
 /** The Monday on or before `key`. Weeks run Monday to Sunday. */
 export function startOfWeek(key: DateKey): DateKey {
   return toDateKey(startOfWeekDate(parseDateKey(key), { weekStartsOn: 1 }));
+}
+
+/** The first day of the month containing `key`. */
+export function startOfMonth(key: DateKey): DateKey {
+  return toDateKey(startOfMonthDate(parseDateKey(key)));
+}
+
+/** The last day of the month containing `key`. */
+export function endOfMonth(key: DateKey): DateKey {
+  return toDateKey(endOfMonthDate(parseDateKey(key)));
+}
+
+/** Moves by whole months, clamping to the month's last day (Jan 31 + 1 month = Feb 28). */
+export function addMonths(key: DateKey, amount: number): DateKey {
+  return toDateKey(addMonthsToDate(parseDateKey(key), amount));
 }
 
 /** Every date from `from` to `to`, inclusive. Empty if `from` is after `to`. */

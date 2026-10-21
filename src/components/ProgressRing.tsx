@@ -1,20 +1,24 @@
+import clsx from "clsx";
 import type { ReactNode } from "react";
 
 const RADIUS = 42;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
+const SIZES = { sm: "size-6", lg: "size-24" } as const;
+
 type ProgressRingProps = {
   /** 0 to 1; values outside are clamped. */
   value: number;
+  size?: keyof typeof SIZES;
   /** Shown in the middle of the ring. */
   children?: ReactNode;
 };
 
 /** A decorative ring; give the surrounding element the accessible progress semantics. */
-export function ProgressRing({ value, children }: ProgressRingProps) {
+export function ProgressRing({ value, size = "lg", children }: ProgressRingProps) {
   const progress = Math.min(1, Math.max(0, value));
   return (
-    <div className="relative size-24 shrink-0">
+    <div className={clsx("relative shrink-0", SIZES[size])}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden="true">
         <circle
           cx="50"

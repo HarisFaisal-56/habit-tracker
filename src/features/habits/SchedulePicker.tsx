@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { Minus, Plus } from "lucide-react";
 import { useId } from "react";
 import { IconButton } from "../../components/Button";
+import { SegmentedControl } from "../../components/SegmentedControl";
 import type { Weekday } from "../../domain/dates";
 import type { Schedule } from "../../domain/habit";
 import { WEEKDAY_NAMES, WEEKDAYS_MONDAY_FIRST } from "./describeSchedule";
@@ -12,10 +13,10 @@ import {
   type HabitFormValues,
 } from "./habitFormValues";
 
-const SCHEDULE_TYPES: { type: Schedule["type"]; label: string }[] = [
-  { type: "daily", label: "Every day" },
-  { type: "days", label: "Some days" },
-  { type: "weekly", label: "Weekly goal" },
+const SCHEDULE_TYPES: { value: Schedule["type"]; label: string }[] = [
+  { value: "daily", label: "Every day" },
+  { value: "days", label: "Some days" },
+  { value: "weekly", label: "Weekly goal" },
 ];
 
 type SchedulePickerProps = {
@@ -27,7 +28,6 @@ type SchedulePickerProps = {
 const errorText = "text-sm text-rose-700 dark:text-rose-400";
 
 export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps) {
-  const name = useId();
   const daysErrorId = useId();
   const timesErrorId = useId();
 
@@ -43,25 +43,14 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
     <fieldset className="flex flex-col gap-3">
       <legend className="mb-2 text-sm font-medium">How often</legend>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800">
-        {SCHEDULE_TYPES.map(({ type, label }) => (
-          <label key={type}>
-            <input
-              type="radio"
-              name={name}
-              value={type}
-              checked={values.scheduleType === type}
-              onChange={() => {
-                onChange({ scheduleType: type });
-              }}
-              className="peer sr-only"
-            />
-            <span className="flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-1 text-center text-sm font-medium text-stone-600 peer-checked:bg-white peer-checked:text-stone-900 peer-checked:shadow-sm peer-focus-visible:outline-2 peer-focus-visible:outline-emerald-600 dark:text-stone-300 dark:peer-checked:bg-stone-950 dark:peer-checked:text-stone-100">
-              {label}
-            </span>
-          </label>
-        ))}
-      </div>
+      <SegmentedControl
+        label="Schedule type"
+        options={SCHEDULE_TYPES}
+        value={values.scheduleType}
+        onChange={(scheduleType) => {
+          onChange({ scheduleType });
+        }}
+      />
 
       {values.scheduleType === "days" && (
         <fieldset aria-describedby={errors.days ? daysErrorId : undefined}>

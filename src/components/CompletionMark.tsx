@@ -3,21 +3,29 @@ import { Check, Minus } from "lucide-react";
 import type { CompletionKind } from "../domain/habit";
 import { habitColor } from "./habitColors";
 
+const SIZES = {
+  md: { mark: "size-9", check: "size-5", minus: "size-4" },
+  sm: { mark: "size-5", check: "size-3", minus: "size-3" },
+} as const;
+
 type CompletionMarkProps = {
   kind: CompletionKind | undefined;
   color: string;
+  size?: keyof typeof SIZES;
 };
 
 /**
  * The check circle on a habit: empty, filled (done), half-filled (minimum
  * version) or dashed (skipped). Decorative; callers describe the state in text.
  */
-export function CompletionMark({ kind, color }: CompletionMarkProps) {
+export function CompletionMark({ kind, color, size = "md" }: CompletionMarkProps) {
+  const sizes = SIZES[size];
   return (
     <span
       aria-hidden="true"
       className={clsx(
-        "relative inline-flex size-9 shrink-0 items-center justify-center",
+        "relative inline-flex shrink-0 items-center justify-center",
+        sizes.mark,
         kind === "skipped" ? "text-stone-400 dark:text-stone-500" : habitColor(color).accent,
       )}
     >
@@ -37,8 +45,10 @@ export function CompletionMark({ kind, color }: CompletionMarkProps) {
         )}
         {kind === "minimum" && <path d="M18 2 A16 16 0 0 0 18 34 Z" fill="currentColor" />}
       </svg>
-      {kind === "full" && <Check className="relative size-5 text-white" strokeWidth={3} />}
-      {kind === "skipped" && <Minus className="relative size-4" strokeWidth={3} />}
+      {kind === "full" && (
+        <Check className={clsx("relative text-white", sizes.check)} strokeWidth={3} />
+      )}
+      {kind === "skipped" && <Minus className={clsx("relative", sizes.minus)} strokeWidth={3} />}
     </span>
   );
 }
