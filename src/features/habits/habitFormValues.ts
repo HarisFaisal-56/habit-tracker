@@ -1,6 +1,7 @@
 import { DEFAULT_HABIT_COLOR } from "../../components/habitColors";
 import type { Weekday } from "../../domain/dates";
 import type { Habit, Schedule } from "../../domain/habit";
+import { isTimeOfDay } from "../../domain/reminders";
 import type { NewHabit } from "../../data/repository";
 
 export const NAME_MAX_LENGTH = 60;
@@ -15,6 +16,8 @@ export type HabitFormValues = {
   color: string;
   identity: string;
   minimumVersion: string;
+  /** "HH:mm", or "" for no reminder. */
+  reminderTime: string;
   scheduleType: Schedule["type"];
   /** Used when scheduleType is "days". Kept when switching types so nothing is lost. */
   days: Weekday[];
@@ -22,7 +25,9 @@ export type HabitFormValues = {
   timesPerWeek: number;
 };
 
-export type HabitFormErrors = Partial<Record<"name" | "days" | "timesPerWeek", string>>;
+export type HabitFormErrors = Partial<
+  Record<"name" | "days" | "timesPerWeek" | "reminderTime", string>
+>;
 
 export function emptyHabitForm(): HabitFormValues {
   return {
@@ -31,6 +36,7 @@ export function emptyHabitForm(): HabitFormValues {
     color: DEFAULT_HABIT_COLOR,
     identity: "",
     minimumVersion: "",
+    reminderTime: "",
     scheduleType: "daily",
     days: [1, 2, 3, 4, 5],
     timesPerWeek: 3,
@@ -46,6 +52,7 @@ export function habitToForm(habit: Habit): HabitFormValues {
     color: habit.color,
     identity: habit.identity ?? "",
     minimumVersion: habit.minimumVersion ?? "",
+    reminderTime: habit.reminderTime ?? "",
     scheduleType: schedule.type,
     days: schedule.type === "days" ? [...schedule.days] : defaults.days,
     timesPerWeek: schedule.type === "weekly" ? schedule.timesPerWeek : defaults.timesPerWeek,
@@ -69,6 +76,9 @@ export function validateHabitForm(values: HabitFormValues): HabitFormErrors {
     (!Number.isInteger(times) || times < MIN_TIMES_PER_WEEK || times > MAX_TIMES_PER_WEEK)
   ) {
     errors.timesPerWeek = `Choose between ${String(MIN_TIMES_PER_WEEK)} and ${String(MAX_TIMES_PER_WEEK)} times.`;
+  }
+  if (values.reminderTime !== "" && !isTimeOfDay(values.reminderTime)) {
+    errors.reminderTime = "Enter a time like 08:30.";
   }
   return errors;
 }
@@ -101,5 +111,6 @@ export function formToHabit(values: HabitFormValues): NewHabit {
     schedule: toSchedule(values),
     identity: optional(values.identity),
     minimumVersion: optional(values.minimumVersion),
+    reminderTime: optional(values.reminderTime),
   };
 }

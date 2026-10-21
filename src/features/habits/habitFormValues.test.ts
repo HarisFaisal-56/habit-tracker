@@ -117,3 +117,21 @@ describe("habitToForm", () => {
     expect(habitToForm(makeHabit())).toMatchObject({ identity: "", minimumVersion: "" });
   });
 });
+
+describe("reminder time", () => {
+  it("is optional but must be a real time when set", () => {
+    expect(validateHabitForm(form({ reminderTime: "" })).reminderTime).toBeUndefined();
+    expect(validateHabitForm(form({ reminderTime: "20:30" })).reminderTime).toBeUndefined();
+    expect(validateHabitForm(form({ reminderTime: "25:00" })).reminderTime).toMatch(/time/);
+  });
+
+  it("round-trips, and clearing it removes the reminder", () => {
+    const habit = makeHabit({ reminderTime: "07:15" });
+    expect(habitToForm(habit).reminderTime).toBe("07:15");
+    expect(formToHabit(habitToForm(habit)).reminderTime).toBe("07:15");
+
+    const cleared = formToHabit({ ...habitToForm(habit), reminderTime: "" });
+    expect("reminderTime" in cleared).toBe(true);
+    expect(cleared.reminderTime).toBeUndefined();
+  });
+});

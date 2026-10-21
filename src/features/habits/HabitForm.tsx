@@ -14,12 +14,9 @@ import {
   validateHabitForm,
   type HabitFormValues,
 } from "./habitFormValues";
+import { errorClass, hintClass, inputClass } from "./formStyles";
+import { ReminderField } from "./ReminderField";
 import { SchedulePicker } from "./SchedulePicker";
-
-const inputClass =
-  "min-h-11 w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-stone-900 placeholder:text-stone-400 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100";
-const errorClass = "mt-1 text-sm text-rose-700 dark:text-rose-400";
-const hintClass = "mt-1 text-sm text-stone-500 dark:text-stone-400";
 
 type HabitFormProps = {
   /** The habit to edit; omit to create a new one. */
@@ -121,6 +118,13 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
         }}
       />
       <SchedulePicker values={values} errors={shownErrors} onChange={update} />
+      <ReminderField
+        value={values.reminderTime}
+        error={shownErrors.reminderTime}
+        onChange={(reminderTime) => {
+          update({ reminderTime });
+        }}
+      />
 
       <div>
         <label htmlFor={minimumId} className="mb-1 block text-sm font-medium">

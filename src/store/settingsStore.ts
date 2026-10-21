@@ -11,7 +11,10 @@ type SettingsState = {
   theme: ThemePreference;
   /** The first-run welcome on Today has been dismissed. */
   welcomeDismissed: boolean;
+  /** The user turned reminders on (the browser permission is tracked separately). */
+  remindersEnabled: boolean;
   setTheme: (theme: ThemePreference) => void;
+  setRemindersEnabled: (enabled: boolean) => void;
   dismissWelcome: () => void;
   resetWelcome: () => void;
 };
@@ -22,8 +25,12 @@ export const useSettings = create<SettingsState>()(
     (set) => ({
       theme: "system",
       welcomeDismissed: false,
+      remindersEnabled: false,
       setTheme: (theme) => {
         set({ theme });
+      },
+      setRemindersEnabled: (remindersEnabled) => {
+        set({ remindersEnabled });
       },
       dismissWelcome: () => {
         set({ welcomeDismissed: true });
@@ -35,7 +42,11 @@ export const useSettings = create<SettingsState>()(
     {
       name: SETTINGS_STORAGE_KEY,
       storage: createJSONStorage(getPreferencesStorage),
-      partialize: ({ theme, welcomeDismissed }) => ({ theme, welcomeDismissed }),
+      partialize: ({ theme, welcomeDismissed, remindersEnabled }) => ({
+        theme,
+        welcomeDismissed,
+        remindersEnabled,
+      }),
     },
   ),
 );

@@ -10,6 +10,7 @@ import { Screen } from "../../components/Screen";
 import { useRepository } from "../../data/RepositoryContext";
 import { useHabits } from "../../data/useData";
 import type { Habit } from "../../domain/habit";
+import { formatReminderTime } from "../reminders/reminderText";
 import { describeSchedule } from "./describeSchedule";
 import { HabitSheet } from "./HabitSheet";
 
@@ -170,6 +171,7 @@ function HabitRow({ habit, onEdit, reorder }: HabitRowProps) {
         <span className="block truncate font-medium">{habit.name}</span>
         <span className="block truncate text-sm text-stone-500 dark:text-stone-400">
           {describeSchedule(habit.schedule)}
+          {habit.reminderTime && ` · reminder ${formatReminderTime(habit.reminderTime)}`}
         </span>
         <IdentityStatement identity={habit.identity} className="truncate" />
       </span>

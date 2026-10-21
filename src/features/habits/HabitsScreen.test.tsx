@@ -248,6 +248,32 @@ describe("HabitsScreen", () => {
     expect((await repository.listHabits())[0]?.identity).toBeUndefined();
   });
 
+  it("sets a reminder time, shows it, and can remove it", async () => {
+    const { user, repository } = renderApp("/habits");
+
+    await user.click(await screen.findByRole("button", { name: "Add habit" }));
+    let form = sheet("New habit");
+    await user.type(within(form).getByLabelText("Name"), "Read");
+    // Until reminders are switched on, the form says where to do that.
+    expect(within(form).getByText(/Turn on reminders in Settings/)).toBeInTheDocument();
+    await user.type(within(form).getByLabelText(/Reminder/), "20:30");
+    await user.click(within(form).getByRole("button", { name: "Add habit" }));
+
+    const row = await screen.findByRole("button", { name: /Read/ });
+    expect(row).toHaveTextContent("Every day · reminder 8:30 PM");
+    expect((await repository.listHabits())[0]?.reminderTime).toBe("20:30");
+
+    await user.click(row);
+    form = sheet("Edit habit");
+    await user.click(within(form).getByRole("button", { name: "Remove reminder" }));
+    await user.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Read/ })).not.toHaveTextContent("reminder");
+    });
+    expect((await repository.listHabits())[0]?.reminderTime).toBeUndefined();
+  });
+
   it("opens the add sheet straight away from /habits?new and clears it on close", async () => {
     const { user, router } = renderApp("/habits?new");
 

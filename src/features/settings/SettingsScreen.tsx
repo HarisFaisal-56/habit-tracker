@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { format } from "date-fns";
-import { Download, Smartphone, Trash, Upload } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { Bell, BellOff, Download, Smartphone, Trash, Upload } from "lucide-react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useInstallState } from "../../app/useInstall";
 import { useToday } from "../../app/useToday";
 import { Button } from "../../components/Button";
@@ -9,8 +9,15 @@ import { Screen } from "../../components/Screen";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import type { Backup } from "../../data/backup";
 import { useRepository } from "../../data/RepositoryContext";
+import { useHabits } from "../../data/useData";
 import { pickTextFile, saveTextFile } from "../../platform/files";
-import { promptInstall } from "../../platform/install";
+import { isInstalled, isIos, promptInstall } from "../../platform/install";
+import {
+  getNotificationPermission,
+  REMINDERS_WORK_WHEN_CLOSED,
+  requestNotificationPermission,
+  showNotification,
+} from "../../platform/notifications";
 import { useSettings, type ThemePreference } from "../../store/settingsStore";
 import { describeData } from "./describeData";
 
@@ -32,6 +39,7 @@ export function SettingsScreen() {
   return (
     <Screen title="Settings">
       <AppearanceSection />
+      <RemindersSection />
       <InstallSection />
       <BackupSection />
       <ResetSection />
@@ -77,6 +85,122 @@ function AppearanceSection() {
     <SettingsSection title="Appearance">
       <SegmentedControl label="Theme" options={THEME_OPTIONS} value={theme} onChange={setTheme} />
       <p className={mutedText}>System follows your device’s light or dark setting.</p>
+    </SettingsSection>
+  );
+}
+
+function RemindersSection() {
+  const enabled = useSettings((state) => state.remindersEnabled);
+  const setEnabled = useSettings((state) => state.setRemindersEnabled);
+  const habits = useHabits();
+  const [permission, setPermission] = useState(getNotificationPermission);
+  const [message, setMessage] = useState<Message | null>(null);
+
+  // The user may change the permission in the browser's site settings meanwhile.
+  useEffect(() => {
+    const refresh = () => {
+      setPermission(getNotificationPermission());
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
+
+  const withReminder = habits?.filter((habit) => habit.reminderTime !== undefined).length ?? 0;
+
+  const turnOn = async () => {
+    setMessage(null);
+    const result = await requestNotificationPermission();
+    setPermission(result);
+    if (result === "granted") {
+      setEnabled(true);
+    } else if (result === "denied") {
+      setMessage({
+        tone: "error",
+        text: "Notifications were blocked, so reminders can’t be sent.",
+      });
+    }
+  };
+
+  const sendTest = async () => {
+    try {
+      await showNotification({
+        title: "🔔 Reminders are working",
+        body: "You’ll get a nudge like this at each habit’s reminder time.",
+        tag: "reminder-test",
+      });
+      setMessage({ tone: "success", text: "Test notification sent." });
+    } catch (error) {
+      console.error("Test notification failed", error);
+      setMessage({ tone: "error", text: "Couldn’t show a notification on this device." });
+    }
+  };
+
+  if (permission === "unsupported") {
+    return (
+      <SettingsSection title="Reminders">
+        <p className={mutedText}>
+          {isIos() && !isInstalled()
+            ? "On iPhone and iPad, install the app to your Home Screen first (see Install below), then turn on reminders here."
+            : "This browser can’t show notifications, so reminders aren’t available here."}
+        </p>
+      </SettingsSection>
+    );
+  }
+
+  const on = enabled && permission === "granted";
+
+  return (
+    <SettingsSection title="Reminders">
+      <p>Get a nudge at the time you choose for each habit, unless you’ve already logged it.</p>
+      {permission === "denied" ? (
+        <p className={mutedText}>
+          Notifications are blocked for this site. Allow them in your browser’s site settings, then
+          come back here.
+        </p>
+      ) : on ? (
+        <>
+          <p className="font-medium text-emerald-700 dark:text-emerald-400">Reminders are on.</p>
+          <p className={mutedText}>
+            {withReminder === 0
+              ? "No habit has a reminder time yet. Add one when editing a habit."
+              : `${String(withReminder)} habit${withReminder === 1 ? " has" : "s have"} a reminder time. Change times when editing a habit.`}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              variant="secondary"
+              icon={Bell}
+              className="flex-1"
+              onClick={() => void sendTest()}
+            >
+              Send a test
+            </Button>
+            <Button
+              variant="ghost"
+              icon={BellOff}
+              className="flex-1"
+              onClick={() => {
+                setEnabled(false);
+                setMessage(null);
+              }}
+            >
+              Turn off reminders
+            </Button>
+          </div>
+        </>
+      ) : (
+        <Button icon={Bell} onClick={() => void turnOn()}>
+          Turn on reminders
+        </Button>
+      )}
+      {!REMINDERS_WORK_WHEN_CLOSED && permission !== "denied" && (
+        <p className={mutedText}>
+          Reminders arrive while the app is open or running in the background. Fully closing it
+          pauses them until you open it again.
+        </p>
+      )}
+      <StatusMessage message={message} />
     </SettingsSection>
   );
 }

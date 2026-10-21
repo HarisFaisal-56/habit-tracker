@@ -5,6 +5,7 @@ import type { NewHabit } from "../../data/repository";
 import { pickTextFile, saveTextFile } from "../../platform/files";
 import { initInstallPrompt } from "../../platform/install";
 import { useSettings } from "../../store/settingsStore";
+import { installFakeNotification } from "../../test/fakeNotification";
 import { makeHabit } from "../../test/factories";
 import { createTestRepository, renderApp } from "../../test/renderApp";
 
@@ -26,6 +27,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   vi.useRealTimers();
   vi.mocked(saveTextFile).mockReset();
   vi.mocked(pickTextFile).mockReset();
@@ -184,6 +186,62 @@ describe("SettingsScreen", () => {
       );
 
       expect(await repository.listHabits()).toHaveLength(1);
+    });
+  });
+
+  describe("reminders", () => {
+    it("explains when the browser can't show notifications", () => {
+      renderApp("/settings");
+      expect(section("Reminders").getByText(/can’t show notifications/)).toBeInTheDocument();
+    });
+
+    it("asks for permission and turns reminders on", async () => {
+      const { FakeNotification } = installFakeNotification("default", "granted");
+      const repository = createTestRepository();
+      await repository.createHabit({ ...reading, reminderTime: "20:00" });
+      const { user } = renderApp("/settings", repository);
+
+      await user.click(section("Reminders").getByRole("button", { name: "Turn on reminders" }));
+
+      expect(FakeNotification.requestPermission).toHaveBeenCalledOnce();
+      expect(await section("Reminders").findByText("Reminders are on.")).toBeVisible();
+      expect(useSettings.getState().remindersEnabled).toBe(true);
+      expect(section("Reminders").getByText(/1 habit has a reminder time/)).toBeVisible();
+      // The web can't deliver reminders to a closed app; say so plainly.
+      expect(section("Reminders").getByText(/Fully closing it pauses them/)).toBeVisible();
+    });
+
+    it("sends a test notification", async () => {
+      const { shown } = installFakeNotification("granted");
+      useSettings.getState().setRemindersEnabled(true);
+      const { user } = renderApp("/settings");
+
+      await user.click(section("Reminders").getByRole("button", { name: "Send a test" }));
+
+      expect(await section("Reminders").findByText("Test notification sent.")).toBeVisible();
+      expect(shown.map((n) => n.title)).toEqual(["🔔 Reminders are working"]);
+    });
+
+    it("turns reminders off without needing the browser", async () => {
+      installFakeNotification("granted");
+      useSettings.getState().setRemindersEnabled(true);
+      const { user } = renderApp("/settings");
+
+      await user.click(section("Reminders").getByRole("button", { name: "Turn off reminders" }));
+
+      expect(useSettings.getState().remindersEnabled).toBe(false);
+      expect(section("Reminders").getByRole("button", { name: "Turn on reminders" })).toBeVisible();
+    });
+
+    it("explains how to recover when notifications are blocked", async () => {
+      installFakeNotification("default", "denied");
+      const { user } = renderApp("/settings");
+
+      await user.click(section("Reminders").getByRole("button", { name: "Turn on reminders" }));
+
+      expect(await section("Reminders").findByText(/blocked for this site/)).toBeVisible();
+      expect(section("Reminders").getByText(/reminders can’t be sent/)).toBeVisible();
+      expect(useSettings.getState().remindersEnabled).toBe(false);
     });
   });
 
