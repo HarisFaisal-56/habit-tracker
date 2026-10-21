@@ -1,8 +1,16 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
+import { createDatabase } from "../data/db";
+import { createDexieRepository } from "../data/dexieRepository";
+import { RepositoryContext } from "../data/RepositoryContext";
 import { routes } from "./routes";
 
 const router = createBrowserRouter(routes);
+const repository = createDexieRepository(createDatabase());
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <RepositoryContext value={repository}>
+      <RouterProvider router={router} />
+    </RepositoryContext>
+  );
 }

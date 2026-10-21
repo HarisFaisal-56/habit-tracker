@@ -101,6 +101,13 @@ describe("habits", () => {
     expect(await repo.getHabit(habit.id)).toEqual(updated);
   });
 
+  it("clears an optional field when it is updated to undefined", async () => {
+    const habit = await repo.createHabit({ ...reading, minimumVersion: "One page" });
+    await repo.updateHabit(habit.id, { minimumVersion: undefined });
+
+    expect((await repo.getHabit(habit.id))?.minimumVersion).toBeUndefined();
+  });
+
   it("can't change protected fields through updateHabit", async () => {
     const habit = await repo.createHabit(reading);
     // Simulates untyped input, e.g. from a form or a future sync payload.

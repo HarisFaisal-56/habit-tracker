@@ -1,0 +1,44 @@
+import type { Weekday } from "../../domain/dates";
+import type { Schedule } from "../../domain/habit";
+
+/** Weekdays in display order: weeks start on Monday. */
+export const WEEKDAYS_MONDAY_FIRST: readonly Weekday[] = [1, 2, 3, 4, 5, 6, 0];
+
+export const WEEKDAY_NAMES: Record<Weekday, string> = {
+  0: "Sunday",
+  1: "Monday",
+  2: "Tuesday",
+  3: "Wednesday",
+  4: "Thursday",
+  5: "Friday",
+  6: "Saturday",
+};
+
+const WEEKDAYS: readonly Weekday[] = [1, 2, 3, 4, 5];
+const WEEKEND: readonly Weekday[] = [6, 0];
+
+function sameDays(a: readonly Weekday[], b: readonly Weekday[]): boolean {
+  return a.length === b.length && b.every((day) => a.includes(day));
+}
+
+/** A short human description, e.g. "Every day", "Mon, Wed, Fri", "3 times a week". */
+export function describeSchedule(schedule: Schedule): string {
+  switch (schedule.type) {
+    case "daily":
+      return "Every day";
+    case "days": {
+      const days = [...new Set(schedule.days)];
+      if (days.length === 0) return "No days chosen";
+      if (days.length === 7) return "Every day";
+      if (sameDays(days, WEEKDAYS)) return "Weekdays";
+      if (sameDays(days, WEEKEND)) return "Weekends";
+      return WEEKDAYS_MONDAY_FIRST.filter((day) => days.includes(day))
+        .map((day) => WEEKDAY_NAMES[day].slice(0, 3))
+        .join(", ");
+    }
+    case "weekly":
+      return schedule.timesPerWeek === 1
+        ? "Once a week"
+        : `${String(schedule.timesPerWeek)} times a week`;
+  }
+}

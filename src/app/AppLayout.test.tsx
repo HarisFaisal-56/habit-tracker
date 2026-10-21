@@ -1,14 +1,10 @@
-import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { routes } from "./routes";
+import { renderApp } from "../test/renderApp";
 import { tabs } from "./tabs";
 
 function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(<RouterProvider router={router} />);
-  return router;
+  return renderApp(path).router;
 }
 
 function getTabBar() {
@@ -34,8 +30,7 @@ describe("AppLayout", () => {
   });
 
   it("navigates between screens from the tab bar", async () => {
-    const user = userEvent.setup();
-    const router = renderAt("/");
+    const { router, user } = renderApp("/");
 
     await user.click(within(getTabBar()).getByRole("link", { name: "Stats" }));
 

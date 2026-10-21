@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --animate-sheet-in: sheet-in 200ms ease-out;
+
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+}
+
 /* Safe-area padding for notched devices (index.html sets viewport-fit=cover). */
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
@@ -11,6 +21,15 @@
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
+/* Regular bottom padding plus the safe area, for content that touches the screen edge. */
+@utility pb-safe-4 {
+  padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom));
+}
+
+/* Stops iOS showing its callout menu during a long press. */
+@utility touch-callout-none {
+  -webkit-touch-callout: none;
+}
 
 @layer base {
   :root {
@@ -20,6 +39,11 @@
   body {
     @apply bg-stone-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Keep the page behind an open sheet from scrolling. */
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
 
   :focus-visible {
