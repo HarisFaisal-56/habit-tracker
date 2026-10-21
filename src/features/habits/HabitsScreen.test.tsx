@@ -224,6 +224,30 @@ describe("HabitsScreen", () => {
     expect((await repository.listHabits()).map((h) => h.name)).toEqual(["Meditate", "Read", "Run"]);
   });
 
+  it("saves an identity statement, shows it, and can clear it", async () => {
+    const { user, repository } = renderApp("/habits");
+
+    await user.click(await screen.findByRole("button", { name: "Add habit" }));
+    let form = sheet("New habit");
+    await user.type(within(form).getByLabelText("Name"), "Read");
+    await user.type(within(form).getByLabelText(/Who you’re becoming/), " I am someone who reads ");
+    await user.click(within(form).getByRole("button", { name: "Add habit" }));
+
+    const row = await screen.findByRole("button", { name: /Read/ });
+    expect(row).toHaveTextContent("“I am someone who reads”");
+    expect((await repository.listHabits())[0]?.identity).toBe("I am someone who reads");
+
+    await user.click(row);
+    form = sheet("Edit habit");
+    await user.clear(within(form).getByLabelText(/Who you’re becoming/));
+    await user.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Read/ })).not.toHaveTextContent("“");
+    });
+    expect((await repository.listHabits())[0]?.identity).toBeUndefined();
+  });
+
   it("opens the add sheet straight away from /habits?new and clears it on close", async () => {
     const { user, router } = renderApp("/habits?new");
 

@@ -6,8 +6,10 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
-// findBy*/waitFor default to 1s, which a busy machine can exceed while IndexedDB loads.
-configure({ asyncUtilTimeout: 3000 });
+// findBy*/waitFor default to 1s. With the whole suite running in parallel, the first
+// render in a file (module loading plus opening IndexedDB) can take several seconds.
+// A longer limit only costs time when a test is genuinely failing.
+configure({ asyncUtilTimeout: 10_000 });
 
 // jsdom has <dialog> but not its modal API. Browsers implement it natively.
 if (

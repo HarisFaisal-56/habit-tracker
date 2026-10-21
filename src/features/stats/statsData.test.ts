@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eachDay } from "../../domain/dates";
 import { makeCompletions, makeHabit, on } from "../../test/factories";
-import { buildStats, formatRate, formatStreak } from "./statsData";
+import { buildStats, formatRate, formatStreak, formatWeekProgress } from "./statsData";
 
 const today = "2025-01-10"; // Friday
 
@@ -65,5 +65,31 @@ describe("formatStreak", () => {
     expect(formatStreak(5, "days")).toBe("5 days");
     expect(formatStreak(0, "weeks")).toBe("0 weeks");
     expect(formatStreak(1, "weeks")).toBe("1 week");
+  });
+});
+
+describe("formatWeekProgress", () => {
+  const week = (done: number, target: number) => ({
+    weekStart: "2025-01-06",
+    done,
+    skipped: 0,
+    target,
+    met: done >= target,
+  });
+
+  it("counts times for weekly goals and days for fixed schedules", () => {
+    expect(formatWeekProgress(week(2, 3), { type: "weekly", timesPerWeek: 3 })).toBe(
+      "2 of 3 times",
+    );
+    expect(formatWeekProgress(week(3, 5), { type: "daily" })).toBe("3 of 5 days");
+  });
+
+  it("explains an empty target", () => {
+    expect(formatWeekProgress(week(0, 0), { type: "weekly", timesPerWeek: 1 })).toBe(
+      "Excused this week",
+    );
+    expect(formatWeekProgress(week(0, 0), { type: "days", days: [1] })).toBe(
+      "Nothing due this week",
+    );
   });
 });

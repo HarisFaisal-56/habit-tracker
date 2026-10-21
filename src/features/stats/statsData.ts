@@ -1,6 +1,6 @@
 import { indexCompletionsByHabit, NO_COMPLETIONS } from "../../domain/completions";
 import type { DateKey } from "../../domain/dates";
-import type { Completion, Habit } from "../../domain/habit";
+import type { Completion, Habit, Schedule } from "../../domain/habit";
 import { getWeekProgress, type WeekProgress } from "../../domain/schedule";
 import {
   getCompletionRate,
@@ -54,4 +54,11 @@ export function formatRate(rate: number | null): string {
 export function formatStreak(count: number, unit: StreakSummary["unit"]): string {
   const word = unit === "days" ? "day" : "week";
   return `${String(count)} ${word}${count === 1 ? "" : "s"}`;
+}
+
+/** "2 of 3 times" for weekly goals, "3 of 5 days" for fixed schedules. */
+export function formatWeekProgress(week: WeekProgress, schedule: Schedule): string {
+  const isWeekly = schedule.type === "weekly";
+  if (week.target === 0) return isWeekly ? "Excused this week" : "Nothing due this week";
+  return `${String(week.done)} of ${String(week.target)} ${isWeekly ? "times" : "days"}`;
 }

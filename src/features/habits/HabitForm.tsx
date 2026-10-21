@@ -9,6 +9,7 @@ import {
   formToHabit,
   habitToForm,
   hasErrors,
+  IDENTITY_MAX_LENGTH,
   MINIMUM_MAX_LENGTH,
   validateHabitForm,
   type HabitFormValues,
@@ -39,6 +40,8 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
   const nameErrorId = useId();
   const minimumId = useId();
   const minimumHintId = useId();
+  const identityId = useId();
+  const identityHintId = useId();
 
   const errors = validateHabitForm(values);
   // Only nag after the first save attempt.
@@ -137,6 +140,28 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
         />
         <p id={minimumHintId} className={hintClass}>
           A tiny version for hard days. It still counts towards your streak.
+        </p>
+      </div>
+
+      <div>
+        <label htmlFor={identityId} className="mb-1 block text-sm font-medium">
+          Who you’re becoming <span className="font-normal text-stone-500">(optional)</span>
+        </label>
+        <input
+          id={identityId}
+          value={values.identity}
+          onChange={(event) => {
+            update({ identity: event.target.value });
+          }}
+          placeholder="e.g. I am someone who reads"
+          maxLength={IDENTITY_MAX_LENGTH}
+          autoComplete="off"
+          aria-describedby={identityHintId}
+          className={inputClass}
+        />
+        <p id={identityHintId} className={hintClass}>
+          Each check-off is a vote for this person. It’s shown with the habit and in your weekly
+          review.
         </p>
       </div>
 

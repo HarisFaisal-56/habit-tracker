@@ -48,11 +48,16 @@ describe("validateHabitForm", () => {
 
 describe("formToHabit", () => {
   it("trims text and builds each schedule type", () => {
-    expect(formToHabit(form({ name: "  Read  ", minimumVersion: " One page " }))).toEqual({
+    expect(
+      formToHabit(
+        form({ name: "  Read  ", identity: " I am a reader ", minimumVersion: " One page " }),
+      ),
+    ).toEqual({
       name: "Read",
       emoji: "✅",
       color: "emerald",
       schedule: { type: "daily" },
+      identity: "I am a reader",
       minimumVersion: "One page",
     });
     expect(formToHabit(form({ scheduleType: "days", days: [5, 1, 3, 1] })).schedule).toEqual({
@@ -65,9 +70,10 @@ describe("formToHabit", () => {
     });
   });
 
-  it("keeps a blank minimum version as an explicit undefined so edits can clear it", () => {
-    const habit = formToHabit(form({ minimumVersion: "  " }));
-    expect("minimumVersion" in habit).toBe(true);
+  it("keeps blank optional fields as explicit undefineds so edits can clear them", () => {
+    const habit = formToHabit(form({ identity: " ", minimumVersion: "  " }));
+    expect(Object.keys(habit)).toEqual(expect.arrayContaining(["identity", "minimumVersion"]));
+    expect(habit.identity).toBeUndefined();
     expect(habit.minimumVersion).toBeUndefined();
   });
 });
@@ -78,6 +84,7 @@ describe("habitToForm", () => {
       name: "Run",
       emoji: "🏃",
       color: "sky",
+      identity: "I am a runner",
       minimumVersion: "Shoes on",
       schedule: { type: "days", days: [2, 4] },
     });
@@ -87,6 +94,7 @@ describe("habitToForm", () => {
     expect(values).toMatchObject({
       scheduleType: "days",
       days: [2, 4],
+      identity: "I am a runner",
       minimumVersion: "Shoes on",
     });
     expect(formToHabit(values)).toEqual({
@@ -94,6 +102,7 @@ describe("habitToForm", () => {
       emoji: "🏃",
       color: "sky",
       schedule: { type: "days", days: [2, 4] },
+      identity: "I am a runner",
       minimumVersion: "Shoes on",
     });
   });
@@ -105,6 +114,6 @@ describe("habitToForm", () => {
       timesPerWeek: 2,
       days: [1, 2, 3, 4, 5],
     });
-    expect(habitToForm(makeHabit()).minimumVersion).toBe("");
+    expect(habitToForm(makeHabit())).toMatchObject({ identity: "", minimumVersion: "" });
   });
 });

@@ -5,6 +5,7 @@ import type { NewHabit } from "../../data/repository";
 
 export const NAME_MAX_LENGTH = 60;
 export const MINIMUM_MAX_LENGTH = 80;
+export const IDENTITY_MAX_LENGTH = 80;
 export const MIN_TIMES_PER_WEEK = 1;
 export const MAX_TIMES_PER_WEEK = 7;
 
@@ -12,6 +13,7 @@ export type HabitFormValues = {
   name: string;
   emoji: string;
   color: string;
+  identity: string;
   minimumVersion: string;
   scheduleType: Schedule["type"];
   /** Used when scheduleType is "days". Kept when switching types so nothing is lost. */
@@ -27,6 +29,7 @@ export function emptyHabitForm(): HabitFormValues {
     name: "",
     emoji: "✅",
     color: DEFAULT_HABIT_COLOR,
+    identity: "",
     minimumVersion: "",
     scheduleType: "daily",
     days: [1, 2, 3, 4, 5],
@@ -41,6 +44,7 @@ export function habitToForm(habit: Habit): HabitFormValues {
     name: habit.name,
     emoji: habit.emoji,
     color: habit.color,
+    identity: habit.identity ?? "",
     minimumVersion: habit.minimumVersion ?? "",
     scheduleType: schedule.type,
     days: schedule.type === "days" ? [...schedule.days] : defaults.days,
@@ -85,16 +89,17 @@ function toSchedule(values: HabitFormValues): Schedule {
 }
 
 /**
- * Converts valid form values for saving. `minimumVersion` is always present
- * (undefined when blank) so that clearing it in an edit removes the old value.
+ * Converts valid form values for saving. Optional text fields are always present
+ * (undefined when blank) so that clearing one in an edit removes the old value.
  */
 export function formToHabit(values: HabitFormValues): NewHabit {
-  const minimumVersion = values.minimumVersion.trim();
+  const optional = (value: string) => (value.trim() === "" ? undefined : value.trim());
   return {
     name: values.name.trim(),
     emoji: values.emoji,
     color: values.color,
     schedule: toSchedule(values),
-    minimumVersion: minimumVersion === "" ? undefined : minimumVersion,
+    identity: optional(values.identity),
+    minimumVersion: optional(values.minimumVersion),
   };
 }

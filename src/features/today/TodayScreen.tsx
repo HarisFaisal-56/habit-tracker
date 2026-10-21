@@ -10,6 +10,7 @@ import { isDone } from "../../domain/completions";
 import { parseDateKey } from "../../domain/dates";
 import type { TodayProgress } from "../../domain/stats";
 import { AddHabitLink } from "../habits/AddHabitLink";
+import { ReviewPrompt } from "../review/ReviewPrompt";
 import { HabitTile } from "./HabitTile";
 import { LogSheet } from "./LogSheet";
 import { buildTodayList, type TodayItem } from "./todayList";
@@ -69,6 +70,7 @@ export function TodayScreen() {
       {list && habits && habits.length > 0 && (
         <>
           <ProgressCard progress={list.progress} />
+          <ReviewPrompt today={today} />
 
           {list.due.length > 0 && (
             <section aria-labelledby="due-heading" className="flex flex-col gap-2">

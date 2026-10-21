@@ -246,4 +246,53 @@ describe("TodayScreen", () => {
     expect(await screen.findByText("Run")).toBeInTheDocument();
     expect(screen.queryByText("Read")).not.toBeInTheDocument();
   });
+
+  it("shows the habit's identity in the options sheet", async () => {
+    const repository = createTestRepository();
+    await repository.createHabit({ ...reading, identity: "I am someone who reads" });
+    const { user } = renderApp("/", repository);
+    await screen.findByText("Read");
+
+    const sheet = await openOptions(user, "Read");
+
+    expect(within(sheet).getByText("“I am someone who reads”")).toBeInTheDocument();
+  });
+
+  describe("weekly review prompt", () => {
+    it("appears on Sunday and leads to the review", async () => {
+      const repository = createTestRepository();
+      await repository.createHabit(reading);
+      setDate(2025, 1, 12); // Sunday
+      const { user, router } = renderApp("/", repository);
+
+      await user.click(await screen.findByRole("link", { name: /time for your weekly review/ }));
+
+      expect(router.state.location.pathname).toBe("/review");
+    });
+
+    it("goes away once this week's review is saved", async () => {
+      const repository = createTestRepository();
+      await repository.createHabit(reading);
+      await repository.saveWeeklyReview({
+        weekStart: "2025-01-06",
+        wins: "Good week",
+        struggles: "",
+        intention: "",
+      });
+      setDate(2025, 1, 12);
+      renderApp("/", repository);
+
+      await screen.findByText("Read");
+      expect(screen.queryByRole("link", { name: /weekly review/ })).not.toBeInTheDocument();
+    });
+
+    it("doesn't appear on other days", async () => {
+      const repository = createTestRepository();
+      await repository.createHabit(reading);
+      renderApp("/", repository); // Wednesday
+
+      await screen.findByText("Read");
+      expect(screen.queryByRole("link", { name: /weekly review/ })).not.toBeInTheDocument();
+    });
+  });
 });

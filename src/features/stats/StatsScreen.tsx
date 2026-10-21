@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useToday } from "../../app/useToday";
 import { EmptyState } from "../../components/EmptyState";
 import { HabitIcon } from "../../components/HabitIcon";
-import { habitColor } from "../../components/habitColors";
+import { IdentityStatement } from "../../components/IdentityStatement";
 import { Screen } from "../../components/Screen";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { useCompletions, useHabits } from "../../data/useData";
@@ -11,6 +11,7 @@ import { COMPLETION_RATE_WINDOWS } from "../../domain/stats";
 import { AddHabitLink } from "../habits/AddHabitLink";
 import { describeSchedule } from "../habits/describeSchedule";
 import { buildStats, formatRate, formatStreak, type HabitStats } from "./statsData";
+import { WeekProgressBar } from "./WeekProgressBar";
 
 type RateWindow = (typeof COMPLETION_RATE_WINDOWS)[number];
 
@@ -101,15 +102,7 @@ export function StatsScreen() {
 
 function HabitStatsCard({ stats, windowDays }: { stats: HabitStats; windowDays: number }) {
   const { habit, streak, rate, week } = stats;
-  const isWeekly = habit.schedule.type === "weekly";
   const atRisk = streak.unit === "days" && streak.atRisk;
-
-  let weekText: string;
-  if (week.target === 0) {
-    weekText = isWeekly ? "Excused this week" : "Nothing due this week";
-  } else {
-    weekText = `${String(week.done)} of ${String(week.target)} ${isWeekly ? "times" : "days"}`;
-  }
 
   return (
     <li
@@ -125,6 +118,7 @@ function HabitStatsCard({ stats, windowDays }: { stats: HabitStats; windowDays: 
           <p className="text-sm text-stone-500 dark:text-stone-400">
             {describeSchedule(habit.schedule)}
           </p>
+          <IdentityStatement identity={habit.identity} />
         </div>
       </div>
 
@@ -139,29 +133,7 @@ function HabitStatsCard({ stats, windowDays }: { stats: HabitStats; windowDays: 
 
       {!habit.archived && (
         <div>
-          <div className="mb-1 flex justify-between text-sm">
-            <span className="text-stone-500 dark:text-stone-400">This week</span>
-            <span className="font-medium tabular-nums">{weekText}</span>
-          </div>
-          {week.target > 0 && (
-            <div
-              role="progressbar"
-              aria-label={`${habit.name} this week`}
-              aria-valuemin={0}
-              aria-valuemax={week.target}
-              aria-valuenow={Math.min(week.done, week.target)}
-              aria-valuetext={weekText}
-              className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800"
-            >
-              <div
-                className={clsx(
-                  "h-full rounded-full bg-current motion-safe:transition-[width]",
-                  habitColor(habit.color).accent,
-                )}
-                style={{ width: `${String(Math.min(100, (week.done / week.target) * 100))}%` }}
-              />
-            </div>
-          )}
+          <WeekProgressBar habit={habit} week={week} />
           {atRisk && (
             <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
               Missed last time. Don’t miss twice and the streak carries on.

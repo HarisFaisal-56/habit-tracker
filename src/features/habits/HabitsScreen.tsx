@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 import { Button, IconButton } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { HabitIcon } from "../../components/HabitIcon";
+import { IdentityStatement } from "../../components/IdentityStatement";
 import { Screen } from "../../components/Screen";
 import { useRepository } from "../../data/RepositoryContext";
 import { useHabits } from "../../data/useData";
@@ -170,6 +171,7 @@ function HabitRow({ habit, onEdit, reorder }: HabitRowProps) {
         <span className="block truncate text-sm text-stone-500 dark:text-stone-400">
           {describeSchedule(habit.schedule)}
         </span>
+        <IdentityStatement identity={habit.identity} className="truncate" />
       </span>
     </>
   );

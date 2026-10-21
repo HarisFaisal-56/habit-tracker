@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { useId, useState } from "react";
 import { Button } from "../../components/Button";
 import { CompletionMark } from "../../components/CompletionMark";
+import { IdentityStatement } from "../../components/IdentityStatement";
 import { Sheet } from "../../components/Sheet";
 import { useRepository } from "../../data/RepositoryContext";
 import { parseDateKey, type DateKey } from "../../domain/dates";
@@ -86,6 +87,7 @@ function LogOptions({
 
   return (
     <div className="flex flex-col gap-4">
+      <IdentityStatement identity={habit.identity} className="-mt-2" />
       <div role="group" aria-label={`Log ${day}`} className="flex flex-col gap-2">
         {options.map(({ kind, label, description }) => {
           const current = completion?.kind === kind;
