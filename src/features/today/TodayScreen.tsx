@@ -96,6 +96,7 @@ export function TodayScreen() {
       <LogSheet
         item={optionsItem}
         date={today}
+        today={today}
         onClose={() => {
           setOptionsFor(null);
         }}

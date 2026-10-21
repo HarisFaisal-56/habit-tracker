@@ -1,4 +1,4 @@
-import type { DateKey } from "./dates";
+import { addDays, type DateKey } from "./dates";
 import type { Completion, CompletionKind } from "./habit";
 
 /** One habit's completions keyed by date. */
@@ -8,6 +8,18 @@ export type CompletionsByDate = ReadonlyMap<DateKey, Completion>;
 const KIND_PRIORITY: Record<CompletionKind, number> = { full: 3, minimum: 2, skipped: 1 };
 
 export const NO_COMPLETIONS: CompletionsByDate = new Map();
+
+/** How many days back a forgotten day can still be logged or changed. */
+export const BACKFILL_DAYS = 7;
+
+/**
+ * Whether completions on `date` can be added or changed: today and the
+ * `BACKFILL_DAYS` days before it. Older history is fixed, so streaks can't be
+ * quietly rewritten long after the fact.
+ */
+export function canLogOn(date: DateKey, today: DateKey): boolean {
+  return date <= today && date >= addDays(today, -BACKFILL_DAYS);
+}
 
 /** Full and minimum completions count as done; skips are neutral. */
 export function isDone(completion: Completion | undefined): boolean {

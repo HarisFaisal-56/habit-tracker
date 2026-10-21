@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useToday } from "../../app/useToday";
 import { CompletionMark } from "../../components/CompletionMark";
@@ -10,6 +11,8 @@ import { ProgressRing } from "../../components/ProgressRing";
 import { Screen } from "../../components/Screen";
 import { useCompletions, useHabits } from "../../data/useData";
 import {
+  BACKFILL_DAYS,
+  canLogOn,
   indexCompletionsByHabit,
   NO_COMPLETIONS,
   type CompletionsByDate,
@@ -24,7 +27,8 @@ import {
 import type { Habit } from "../../domain/habit";
 import { getDayStatus, type DayStatus } from "../../domain/streaks";
 import { AddHabitLink } from "../habits/AddHabitLink";
-import { buildHeatmap, getDayEntries, summarizeDay } from "./historyData";
+import { LogSheet } from "../today/LogSheet";
+import { buildHeatmap, getDayEntries, summarizeDay, type DayEntry } from "./historyData";
 import { MonthCalendar, type CalendarDay } from "./MonthCalendar";
 
 const ALL_HABITS = "all";
@@ -177,41 +181,94 @@ type DayDetailsProps = {
 };
 
 function DayDetails({ habits, byHabit, date, today }: DayDetailsProps) {
+  const [loggingId, setLoggingId] = useState<string | null>(null);
   const entries = getDayEntries(habits, byHabit, date, today);
   const heading = date === today ? "Today" : format(parseDateKey(date), "EEEE d MMMM");
+  const loggable = canLogOn(date, today);
+  const logging = entries.find((entry) => entry.habit.id === loggingId);
 
   return (
-    <section aria-labelledby="day-heading" className="flex flex-col gap-2">
-      <h2 id="day-heading" aria-live="polite" className="text-lg font-semibold">
-        {heading}
-      </h2>
-      {entries.length === 0 ? (
-        <p className="text-sm text-stone-500 dark:text-stone-400">No habits on this day yet.</p>
+    <>
+      <section aria-labelledby="day-heading" className="flex flex-col gap-2">
+        <h2 id="day-heading" aria-live="polite" className="text-lg font-semibold">
+          {heading}
+        </h2>
+        {entries.length === 0 ? (
+          <p className="text-sm text-stone-500 dark:text-stone-400">No habits on this day yet.</p>
+        ) : (
+          <>
+            {date !== today && (
+              <p className="text-sm text-stone-500 dark:text-stone-400">
+                {loggable
+                  ? "Forgot to log? Tap a habit to update this day."
+                  : `Only the last ${String(BACKFILL_DAYS)} days can be changed.`}
+              </p>
+            )}
+            <ul className="flex flex-col gap-2">
+              {entries.map((entry) => (
+                <DayEntryRow
+                  key={entry.habit.id}
+                  entry={entry}
+                  onLog={
+                    loggable && !entry.habit.archived
+                      ? () => {
+                          setLoggingId(entry.habit.id);
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+      <LogSheet
+        item={logging}
+        date={date}
+        today={today}
+        onClose={() => {
+          setLoggingId(null);
+        }}
+      />
+    </>
+  );
+}
+
+function DayEntryRow({ entry, onLog }: { entry: DayEntry; onLog?: () => void }) {
+  const { habit, status, completion } = entry;
+  const content = (
+    <>
+      <HabitIcon emoji={habit.emoji} color={habit.color} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium">{habit.name}</span>
+        <span className="block text-sm text-stone-500 dark:text-stone-400">
+          {dayStatusText(status, habit.schedule)}
+        </span>
+        {completion?.note && (
+          <span className="block text-sm text-stone-500 italic dark:text-stone-400">
+            “{completion.note}”
+          </span>
+        )}
+      </span>
+      <StatusMark status={status} color={habit.color} />
+    </>
+  );
+
+  return (
+    <li className="rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+      {onLog ? (
+        <button
+          type="button"
+          onClick={onLog}
+          className="flex w-full items-center gap-3 rounded-2xl p-3 text-left hover:bg-stone-50 active:bg-stone-100 dark:hover:bg-stone-800 dark:active:bg-stone-800"
+        >
+          {content}
+          <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-stone-400" />
+        </button>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {entries.map(({ habit, status, completion }) => (
-            <li
-              key={habit.id}
-              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm dark:bg-stone-900"
-            >
-              <HabitIcon emoji={habit.emoji} color={habit.color} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{habit.name}</p>
-                <p className="text-sm text-stone-500 dark:text-stone-400">
-                  {dayStatusText(status, habit.schedule)}
-                </p>
-                {completion?.note && (
-                  <p className="text-sm text-stone-500 italic dark:text-stone-400">
-                    “{completion.note}”
-                  </p>
-                )}
-              </div>
-              <StatusMark status={status} color={habit.color} />
-            </li>
-          ))}
-        </ul>
+        <div className="flex items-center gap-3 p-3">{content}</div>
       )}
-    </section>
+    </li>
   );
 }
 

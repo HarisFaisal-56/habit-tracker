@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HabitRepository, NewHabit } from "../../data/repository";
 import { type CompletionKind } from "../../domain/habit";
@@ -146,5 +146,77 @@ describe("HistoryScreen", () => {
 
     await user.selectOptions(select, archived.id);
     expect(screen.getByRole("img", { name: /^Run, last 12 months/ })).toBeInTheDocument();
+  });
+
+  describe("logging past days", () => {
+    it("logs a forgotten day from the last week", async () => {
+      const repository = createTestRepository();
+      await seed(repository, reading, "2025-01-01");
+      const { user } = renderApp("/history", repository);
+
+      await user.click(await screen.findByRole("button", { name: /^Tuesday 7 January/ }));
+      const details = screen.getByRole("region", { name: "Tuesday 7 January" });
+      expect(within(details).getByText(/Forgot to log\?/)).toBeInTheDocument();
+      await user.click(within(details).getByRole("button", { name: /Read/ }));
+
+      const sheet = screen.getByRole("dialog", { name: "📚 Read · Tue 7 Jan" });
+      expect(within(sheet).getByRole("button", { name: /Skip this day/ })).toBeInTheDocument();
+      await user.click(within(sheet).getByRole("button", { name: /^Done/ }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: /Read/ })).not.toBeInTheDocument();
+      });
+      expect(await within(details).findByText("Done")).toBeInTheDocument();
+      expect(day(/^Tuesday 7 January, 1 of 1 done/)).toBeInTheDocument();
+      expect(await repository.listCompletions()).toMatchObject([
+        { date: "2025-01-07", kind: "full" },
+      ]);
+    });
+
+    it("changes or clears an existing past entry", async () => {
+      const repository = createTestRepository();
+      await seed(repository, reading, "2025-01-01", { "2025-01-06": "full" });
+      const { user } = renderApp("/history", repository);
+
+      await user.click(await screen.findByRole("button", { name: /^Monday 6 January/ }));
+      const details = screen.getByRole("region", { name: "Monday 6 January" });
+      await user.click(within(details).getByRole("button", { name: /Read/ }));
+      const sheet = screen.getByRole("dialog", { name: /Read/ });
+      await user.click(within(sheet).getByRole("button", { name: "Clear this day" }));
+
+      expect(await within(details).findByText("Missed")).toBeInTheDocument();
+      expect(await repository.listCompletions()).toEqual([]);
+    });
+
+    it("keeps days older than a week read-only", async () => {
+      const repository = createTestRepository();
+      await seed(repository, reading, "2024-12-20");
+      const { user } = renderApp("/history", repository);
+
+      await user.click(await screen.findByRole("button", { name: "Previous month" }));
+      await user.click(day(/^Tuesday 31 December/)); // 8 days ago
+      const oldDay = screen.getByRole("region", { name: "Tuesday 31 December" });
+      expect(within(oldDay).getByText("Only the last 7 days can be changed.")).toBeInTheDocument();
+      expect(within(oldDay).queryByRole("button")).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Next month" }));
+      await user.click(day(/^Wednesday 1 January/)); // 7 days ago: still allowed
+      const lastAllowed = screen.getByRole("region", { name: "Wednesday 1 January" });
+      expect(within(lastAllowed).getByRole("button", { name: /Read/ })).toBeInTheDocument();
+    });
+
+    it("doesn't log archived habits", async () => {
+      const repository = createTestRepository();
+      const archived = await seed(repository, reading, "2025-01-01");
+      await repository.setHabitArchived(archived.id, true);
+      const { user } = renderApp("/history", repository);
+
+      await user.selectOptions(await screen.findByLabelText("Habit"), archived.id);
+      await user.click(day(/^Tuesday 7 January/));
+
+      const details = screen.getByRole("region", { name: "Tuesday 7 January" });
+      expect(within(details).getByText("Read")).toBeInTheDocument();
+      expect(within(details).queryByRole("button")).not.toBeInTheDocument();
+    });
   });
 });

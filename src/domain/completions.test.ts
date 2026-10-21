@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeCompletions } from "../test/factories";
-import { indexCompletions, indexCompletionsByHabit, isDone } from "./completions";
+import { canLogOn, indexCompletions, indexCompletionsByHabit, isDone } from "./completions";
 import type { Completion } from "./habit";
 
 const completion = (overrides: Partial<Completion>): Completion => ({
@@ -64,5 +64,26 @@ describe("indexCompletionsByHabit", () => {
     ]);
 
     expect(byHabit.get("a")?.get("2025-01-01")?.id).toBe("1");
+  });
+});
+
+describe("canLogOn", () => {
+  const today = "2025-01-08";
+
+  it("allows today and the 7 days before it", () => {
+    expect(canLogOn(today, today)).toBe(true);
+    expect(canLogOn("2025-01-07", today)).toBe(true);
+    expect(canLogOn("2025-01-01", today)).toBe(true); // 7 days ago
+  });
+
+  it("refuses older days and future days", () => {
+    expect(canLogOn("2024-12-31", today)).toBe(false); // 8 days ago
+    expect(canLogOn("2025-01-09", today)).toBe(false);
+  });
+
+  it("counts calendar days across month and year boundaries", () => {
+    expect(canLogOn("2024-12-27", "2025-01-03")).toBe(true);
+    expect(canLogOn("2024-12-26", "2025-01-03")).toBe(false);
+    expect(canLogOn("2024-02-29", "2024-03-07")).toBe(true); // leap day
   });
 });

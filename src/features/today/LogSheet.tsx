@@ -1,31 +1,37 @@
 import clsx from "clsx";
+import { format } from "date-fns";
 import { useId, useState } from "react";
 import { Button } from "../../components/Button";
 import { CompletionMark } from "../../components/CompletionMark";
 import { Sheet } from "../../components/Sheet";
 import { useRepository } from "../../data/RepositoryContext";
-import type { DateKey } from "../../domain/dates";
-import type { CompletionKind } from "../../domain/habit";
-import type { TodayItem } from "./todayList";
+import { parseDateKey, type DateKey } from "../../domain/dates";
+import type { Completion, CompletionKind, Habit } from "../../domain/habit";
+
+/** The habit being logged and its existing completion on that date, if any. */
+export type LogTarget = { habit: Habit; completion: Completion | undefined };
 
 const NOTE_MAX_LENGTH = 200;
 
 type LogSheetProps = {
   /** The habit being logged; the sheet is closed when undefined. */
-  item: TodayItem | undefined;
+  item: LogTarget | undefined;
   date: DateKey;
+  today: DateKey;
   onClose: () => void;
 };
 
 /** Options for logging a habit beyond a simple tap: minimum version, skip, note. */
-export function LogSheet({ item, date, onClose }: LogSheetProps) {
+export function LogSheet({ item, date, today, onClose }: LogSheetProps) {
+  const isToday = date === today;
+  const dateSuffix = isToday ? "" : ` · ${format(parseDateKey(date), "EEE d MMM")}`;
   return (
     <Sheet
       open={item !== undefined}
       onClose={onClose}
-      title={item && `${item.habit.emoji} ${item.habit.name}`}
+      title={item && `${item.habit.emoji} ${item.habit.name}${dateSuffix}`}
     >
-      {item && <LogOptions item={item} date={date} onDone={onClose} />}
+      {item && <LogOptions item={item} date={date} isToday={isToday} onDone={onClose} />}
     </Sheet>
   );
 }
@@ -33,12 +39,15 @@ export function LogSheet({ item, date, onClose }: LogSheetProps) {
 function LogOptions({
   item,
   date,
+  isToday,
   onDone,
 }: {
-  item: TodayItem;
+  item: LogTarget;
   date: DateKey;
+  isToday: boolean;
   onDone: () => void;
 }) {
+  const day = isToday ? "today" : "this day";
   const repository = useRepository();
   const { habit, completion } = item;
   const [note, setNote] = useState(completion?.note ?? "");
@@ -56,7 +65,7 @@ function LogOptions({
     },
     {
       kind: "skipped",
-      label: "Skip today",
+      label: `Skip ${day}`,
       description: "Sick or away? Skipping won’t break your streak.",
     },
   ];
@@ -77,7 +86,7 @@ function LogOptions({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Log today" className="flex flex-col gap-2">
+      <div role="group" aria-label={`Log ${day}`} className="flex flex-col gap-2">
         {options.map(({ kind, label, description }) => {
           const current = completion?.kind === kind;
           return (
@@ -140,7 +149,7 @@ function LogOptions({
             className="flex-1"
             onClick={() => void run(() => repository.clearCompletion(habit.id, date))}
           >
-            Clear today
+            Clear {day}
           </Button>
           <Button
             variant="secondary"
