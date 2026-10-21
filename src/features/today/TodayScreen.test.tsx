@@ -43,14 +43,45 @@ async function openOptions(user: ReturnType<typeof renderApp>["user"], name: str
 }
 
 describe("TodayScreen", () => {
-  it("shows the date and an empty state that leads to adding a habit", async () => {
-    const { user, router } = renderApp("/");
+  describe("first run", () => {
+    it("welcomes a new user with the app's principles and the date", async () => {
+      renderApp("/");
 
-    expect(screen.getByText("Wednesday, 8 January")).toBeInTheDocument();
-    await user.click(await screen.findByRole("link", { name: "Add your first habit" }));
+      expect(screen.getByText("Wednesday, 8 January")).toBeInTheDocument();
+      const welcome = await screen.findByRole("region", { name: "Welcome" });
+      expect(within(welcome).getByText(/Never miss twice/)).toBeInTheDocument();
+      expect(within(welcome).getByText(/Minimum version/)).toBeInTheDocument();
+    });
 
-    expect(router.state.location.pathname).toBe("/habits");
-    expect(screen.getByRole("dialog", { name: "New habit" })).toBeInTheDocument();
+    it("adds a starter habit in one tap", async () => {
+      const { user, repository } = renderApp("/");
+
+      const welcome = await screen.findByRole("region", { name: "Welcome" });
+      await user.click(within(welcome).getByRole("button", { name: /Read/ }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole("region", { name: "Welcome" })).not.toBeInTheDocument();
+      });
+      expect(await screen.findByRole("button", { name: "More options for Read" })).toBeVisible();
+      expect(await repository.listHabits()).toMatchObject([
+        { name: "Read", minimumVersion: "Read one page", identity: "I am someone who reads" },
+      ]);
+    });
+
+    it("goes to the add-habit sheet to create your own, and doesn't show again", async () => {
+      const { user, router } = renderApp("/");
+
+      await user.click(await screen.findByRole("button", { name: "Create my own habit" }));
+
+      expect(router.state.location.pathname).toBe("/habits");
+      const sheet = screen.getByRole("dialog", { name: "New habit" });
+      await user.click(within(sheet).getByRole("button", { name: "Close" }));
+      await user.click(screen.getByRole("link", { name: "Today" }));
+
+      // Dismissed: still no habits, so the plain empty state shows instead.
+      expect(await screen.findByRole("link", { name: "Add your first habit" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "Welcome" })).not.toBeInTheDocument();
+    });
   });
 
   it("checks a habit off with one tap and undoes it with another", async () => {

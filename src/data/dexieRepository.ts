@@ -143,5 +143,28 @@ export function createDexieRepository(db: HabitDatabase): HabitRepository {
         return review;
       });
     },
+
+    exportData() {
+      return db.transaction("r", db.habits, db.completions, db.weeklyReviews, async () => ({
+        habits: await db.habits.orderBy("sortOrder").toArray(),
+        completions: await db.completions.orderBy("date").toArray(),
+        weeklyReviews: await db.weeklyReviews.orderBy("weekStart").toArray(),
+      }));
+    },
+
+    replaceAllData({ habits, completions, weeklyReviews }) {
+      return db.transaction("rw", db.habits, db.completions, db.weeklyReviews, async () => {
+        await Promise.all([db.habits.clear(), db.completions.clear(), db.weeklyReviews.clear()]);
+        await db.habits.bulkAdd(habits);
+        await db.completions.bulkAdd(completions);
+        await db.weeklyReviews.bulkAdd(weeklyReviews);
+      });
+    },
+
+    clearAllData() {
+      return db.transaction("rw", db.habits, db.completions, db.weeklyReviews, async () => {
+        await Promise.all([db.habits.clear(), db.completions.clear(), db.weeklyReviews.clear()]);
+      });
+    },
   };
 }

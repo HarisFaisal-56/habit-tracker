@@ -5,6 +5,7 @@ import "fake-indexeddb/auto";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
+import { useSettings } from "../store/settingsStore";
 
 // findBy*/waitFor default to 1s. With the whole suite running in parallel, the first
 // render in a file (module loading plus opening IndexedDB) can take several seconds.
@@ -32,6 +33,32 @@ if (
   };
 }
 
+// jsdom has no working matchMedia. Report light mode, a normal browser tab, and so on;
+// tests that need something else replace window.matchMedia themselves.
+if (typeof window !== "undefined") {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    // Only the modern listener methods; the app doesn't use the deprecated ones.
+    value: (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList,
+  });
+}
+
 afterEach(() => {
   cleanup();
+  // Per-device preferences are module-level state; start each test fresh.
+  useSettings.setState(useSettings.getInitialState(), true);
+  if (typeof document !== "undefined") {
+    globalThis.localStorage.clear();
+    document.documentElement.className = "";
+    document.documentElement.removeAttribute("style");
+  }
 });

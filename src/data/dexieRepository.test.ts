@@ -284,3 +284,69 @@ describe("weekly reviews", () => {
     expect(await repo.listWeeklyReviews()).toEqual([]);
   });
 });
+
+describe("bulk data", () => {
+  it("exports everything, including archived habits", async () => {
+    const a = await repo.createHabit(reading);
+    const b = await repo.createHabit(walking);
+    await repo.setHabitArchived(b.id, true);
+    await repo.setCompletion({ habitId: a.id, date: "2025-01-15", kind: "full" });
+    await repo.saveWeeklyReview({
+      weekStart: "2025-01-13",
+      wins: "",
+      struggles: "",
+      intention: "x",
+    });
+
+    const data = await repo.exportData();
+
+    expect(data.habits.map((h) => h.id)).toEqual([a.id, b.id]);
+    expect(data.completions).toHaveLength(1);
+    expect(data.weeklyReviews).toHaveLength(1);
+  });
+
+  it("replaces all data", async () => {
+    await repo.createHabit(reading);
+    const imported = {
+      habits: [{ ...reading, id: "new", sortOrder: 0, createdAt: "2024-06-01", archived: false }],
+      completions: [{ id: "c", habitId: "new", date: "2024-06-02", kind: "full" as const }],
+      weeklyReviews: [],
+    };
+
+    await repo.replaceAllData(imported);
+
+    expect(await repo.exportData()).toEqual(imported);
+  });
+
+  it("leaves existing data untouched if a replacement fails", async () => {
+    const existing = await repo.createHabit(reading);
+    const broken = {
+      habits: [{ ...reading, id: "new", sortOrder: 0, createdAt: "2024-06-01", archived: false }],
+      // Two check-ins for the same habit and day violate the unique index.
+      completions: [
+        { id: "c1", habitId: "new", date: "2024-06-02", kind: "full" as const },
+        { id: "c2", habitId: "new", date: "2024-06-02", kind: "skipped" as const },
+      ],
+      weeklyReviews: [],
+    };
+
+    await expect(repo.replaceAllData(broken)).rejects.toThrow();
+
+    expect((await repo.listHabits()).map((h) => h.id)).toEqual([existing.id]);
+  });
+
+  it("clears everything", async () => {
+    const habit = await repo.createHabit(reading);
+    await repo.setCompletion({ habitId: habit.id, date: "2025-01-15", kind: "full" });
+    await repo.saveWeeklyReview({
+      weekStart: "2025-01-13",
+      wins: "a",
+      struggles: "",
+      intention: "",
+    });
+
+    await repo.clearAllData();
+
+    expect(await repo.exportData()).toEqual({ habits: [], completions: [], weeklyReviews: [] });
+  });
+});

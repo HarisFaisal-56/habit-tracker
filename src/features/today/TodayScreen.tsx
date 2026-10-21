@@ -9,10 +9,12 @@ import { useCompletions, useHabits } from "../../data/useData";
 import { isDone } from "../../domain/completions";
 import { parseDateKey } from "../../domain/dates";
 import type { TodayProgress } from "../../domain/stats";
+import { useSettings } from "../../store/settingsStore";
 import { AddHabitLink } from "../habits/AddHabitLink";
 import { ReviewPrompt } from "../review/ReviewPrompt";
 import { HabitTile } from "./HabitTile";
 import { LogSheet } from "./LogSheet";
+import { Welcome } from "./Welcome";
 import { buildTodayList, type TodayItem } from "./todayList";
 
 export function TodayScreen() {
@@ -20,6 +22,7 @@ export function TodayScreen() {
   const habits = useHabits();
   const completions = useCompletions();
   const repository = useRepository();
+  const welcomeDismissed = useSettings((state) => state.welcomeDismissed);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
 
   const list = useMemo(
@@ -61,11 +64,15 @@ export function TodayScreen() {
 
   return (
     <Screen title="Today" subtitle={format(parseDateKey(today), "EEEE, d MMMM")}>
-      {list && habits?.length === 0 && (
-        <EmptyState action={<AddHabitLink />}>
-          Nothing to track yet. Add a habit and it will show up here every day it’s due.
-        </EmptyState>
-      )}
+      {list &&
+        habits?.length === 0 &&
+        (welcomeDismissed ? (
+          <EmptyState action={<AddHabitLink />}>
+            Nothing to track yet. Add a habit and it will show up here every day it’s due.
+          </EmptyState>
+        ) : (
+          <Welcome />
+        ))}
 
       {list && habits && habits.length > 0 && (
         <>

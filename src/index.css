@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Dark mode follows a class on <html> (set from the theme setting, which can be
+   "system"), not the media query directly. See src/app/theme.ts. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* For dense chart labels, e.g. the heatmap's month and weekday names. */
   --text-2xs: 0.625rem;
@@ -37,7 +41,10 @@
 
 @layer base {
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
   }
 
   body {

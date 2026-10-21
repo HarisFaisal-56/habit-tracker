@@ -16,4 +16,14 @@ npm run test        # run Vitest once
 npm run test:watch  # run Vitest in watch mode
 npm run lint        # ESLint
 npm run format      # Prettier (write)
+npm run icons       # regenerate the PWA icons in public/
+```
+
+## Offline and install
+
+The service worker is only built for production. To try offline mode or installing:
+
+```sh
+npm run build
+npm run preview     # http://localhost:4173
 ```

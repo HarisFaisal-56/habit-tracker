@@ -24,6 +24,13 @@ export type CompletionQuery = {
 
 export type WeeklyReviewInput = Omit<WeeklyReview, "id">;
 
+/** Everything the app stores, e.g. for backups. */
+export type AppData = {
+  habits: Habit[];
+  completions: Completion[];
+  weeklyReviews: WeeklyReview[];
+};
+
 /**
  * The only way the app reads or writes data. UI and stores depend on this type,
  * never on Dexie, so another implementation (e.g. sync) can be swapped in.
@@ -60,4 +67,14 @@ export type HabitRepository = {
   getWeeklyReview(weekStart: DateKey): Promise<WeeklyReview | undefined>;
   /** Creates or replaces the review for a week. `weekStart` must be a Monday. */
   saveWeeklyReview(input: WeeklyReviewInput): Promise<WeeklyReview>;
+
+  /** All data, including archived habits. */
+  exportData(): Promise<AppData>;
+  /**
+   * Replaces all data in one step. If anything fails, nothing changes.
+   * The data must already be validated (see `parseBackup`).
+   */
+  replaceAllData(data: AppData): Promise<void>;
+  /** Deletes everything. */
+  clearAllData(): Promise<void>;
 };

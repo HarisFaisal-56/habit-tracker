@@ -7,6 +7,27 @@
     <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="apple-mobile-web-app-title" content="Habits" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <script>
+      // Apply the saved theme before first paint so dark mode doesn't flash.
+      // Mirrors src/app/theme.ts; the key is SETTINGS_STORAGE_KEY in src/store/settingsStore.ts.
+      (function () {
+        var theme = "system";
+        try {
+          var saved = JSON.parse(localStorage.getItem("habit-tracker-settings") || "{}");
+          if (saved.state && saved.state.theme) theme = saved.state.theme;
+        } catch (error) {
+          // No storage (e.g. private mode): fall back to the system setting.
+        }
+        var dark =
+          theme === "dark" ||
+          (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
     <title>Habit Tracker</title>
   </head>
   <body>
