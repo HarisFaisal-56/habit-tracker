@@ -128,7 +128,7 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
 
       <div>
         <label htmlFor={minimumId} className="mb-1 block text-sm font-medium">
-          Minimum version <span className="font-normal text-stone-500">(optional)</span>
+          Minimum version <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
           id={minimumId}
@@ -149,7 +149,7 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
 
       <div>
         <label htmlFor={identityId} className="mb-1 block text-sm font-medium">
-          Who you’re becoming <span className="font-normal text-stone-500">(optional)</span>
+          Who you’re becoming <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
           id={identityId}

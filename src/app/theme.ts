@@ -4,10 +4,10 @@ export type ResolvedTheme = "light" | "dark";
 
 export const DARK_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 
-/** Page background per theme (Tailwind stone-50 / stone-950), for the browser's UI colour. */
+/** Page background per theme (`--color-canvas` in index.css), for the browser's UI colour. */
 const BROWSER_THEME_COLOR: Record<ResolvedTheme, string> = {
-  light: "#fafaf9",
-  dark: "#0c0a09",
+  light: "#f6f6f1",
+  dark: "#07080b",
 };
 
 export function resolveTheme(

@@ -8,8 +8,8 @@ type EmptyStateProps = {
 
 export function EmptyState({ children, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-stone-300 p-6 text-center dark:border-stone-700">
-      <p className="text-stone-500 dark:text-stone-400">{children}</p>
+    <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-line p-6 text-center">
+      <p className="text-muted">{children}</p>
       {action}
     </div>
   );

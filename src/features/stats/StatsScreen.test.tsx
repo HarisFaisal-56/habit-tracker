@@ -71,18 +71,18 @@ describe("StatsScreen", () => {
     const { user } = renderApp("/stats", repository);
 
     await screen.findByRole("heading", { name: "Read" });
-    const overall = screen.getByText("Completion rate, last 30 days").parentElement;
+    const overall = screen.getByRole("region", { name: "Completion rate" });
     expect(overall).toHaveTextContent("23%"); // 7 of 30
     expect(stat("Read", "Current streak")).toBe("7 days");
     expect(stat("Read", "Best streak")).toBe("7 days");
     expect(stat("Read", "30-day rate")).toBe("23%");
 
-    await user.click(screen.getByRole("radio", { name: "7 days" }));
+    await user.click(screen.getByRole("radio", { name: "7D" }));
 
-    expect(screen.getByText("Completion rate, last 7 days")).toBeInTheDocument();
+    expect(screen.getByText("of planned check-ins kept · last 7 days")).toBeInTheDocument();
     expect(stat("Read", "7-day rate")).toBe("100%");
 
-    await user.click(screen.getByRole("radio", { name: "90 days" }));
+    await user.click(screen.getByRole("radio", { name: "90D" }));
     expect(stat("Read", "90-day rate")).toBe("23%"); // the habit is only 30 days old
   });
 

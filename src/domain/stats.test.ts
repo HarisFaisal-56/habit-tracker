@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { makeCompletions, makeHabit, makeIndex, on } from "../test/factories";
 import { eachDay, type DateKey } from "./dates";
 import type { CompletionKind, Habit } from "./habit";
-import { getCompletionRate, getOverallCompletionRate, getTodayProgress } from "./stats";
+import {
+  getBestRun,
+  getCompletionRate,
+  getCompletionTrend,
+  getLongestCurrentRun,
+  getOverallCompletionRate,
+  getTodayProgress,
+} from "./stats";
 
 type Days = Record<DateKey, CompletionKind>;
 
@@ -171,11 +178,105 @@ describe("getTodayProgress", () => {
       ...makeCompletions("weekly-today", on("full", "2025-01-06", today)),
     ];
 
-    // Due: done, open, minimum, weekly-today. Done: done, minimum, weekly-today.
-    expect(getTodayProgress(habits, completions, today)).toEqual({ done: 3, due: 4 });
+    // Due: done, open, minimum, weekly-today. Closed: done, weekly-today. Minimum: minimum.
+    expect(getTodayProgress(habits, completions, today)).toEqual({
+      closed: 2,
+      minimum: 1,
+      due: 4,
+    });
+  });
+
+  it("keeps the minimum version out of the closed count", () => {
+    const today = "2025-01-08";
+    const habits = [daily({ id: "a" }), daily({ id: "b" })];
+    const completions = [
+      ...makeCompletions("a", on("minimum", today)),
+      ...makeCompletions("b", on("minimum", today)),
+    ];
+
+    expect(getTodayProgress(habits, completions, today)).toEqual({
+      closed: 0,
+      minimum: 2,
+      due: 2,
+    });
   });
 
   it("is zero with no habits", () => {
-    expect(getTodayProgress([], [], "2025-01-08")).toEqual({ done: 0, due: 0 });
+    expect(getTodayProgress([], [], "2025-01-08")).toEqual({ closed: 0, minimum: 0, due: 0 });
+  });
+});
+
+describe("getLongestCurrentRun", () => {
+  const today = "2025-01-08";
+
+  it("is the longest current day streak among active habits", () => {
+    const habits = [daily({ id: "short" }), daily({ id: "long" })];
+    const completions = [
+      ...makeCompletions("short", on("full", ...eachDay("2025-01-06", today))),
+      ...makeCompletions("long", on("full", ...eachDay("2025-01-01", today))),
+    ];
+
+    expect(getLongestCurrentRun(habits, completions, today)).toBe(8);
+  });
+
+  it("keeps a run alive across one missed day and ends it after two", () => {
+    const habits = [daily({ id: "a" })];
+    const days = (...dates: string[]) => makeCompletions("a", on("full", ...dates));
+
+    expect(getLongestCurrentRun(habits, days("2025-01-05", "2025-01-06"), today)).toBe(2);
+    expect(getLongestCurrentRun(habits, days("2025-01-04", "2025-01-05"), today)).toBe(0);
+  });
+
+  it("runs across a year boundary", () => {
+    const habits = [daily({ id: "a", createdAt: "2024-12-20" })];
+    const completions = makeCompletions("a", on("full", ...eachDay("2024-12-28", "2025-01-02")));
+
+    expect(getLongestCurrentRun(habits, completions, "2025-01-02")).toBe(6);
+  });
+
+  it("leaves out archived habits and weekly goals", () => {
+    const habits = [daily({ id: "archived", archived: true }), { ...weekly(3), id: "weekly" }];
+    const completions = [
+      ...makeCompletions("archived", on("full", ...eachDay("2025-01-01", today))),
+      ...makeCompletions("weekly", on("full", "2025-01-06", "2025-01-07", today)),
+    ];
+
+    expect(getLongestCurrentRun(habits, completions, today)).toBe(0);
+  });
+
+  it("is zero with no habits", () => {
+    expect(getLongestCurrentRun([], [], today)).toBe(0);
+  });
+});
+
+describe("getBestRun", () => {
+  it("is the best day streak across the habits, ignoring weekly goals", () => {
+    const habits = [daily({ id: "a" }), { ...weekly(1), id: "weekly" }];
+    const completions = [
+      ...makeCompletions("a", on("full", ...eachDay("2025-01-01", "2025-01-04"))),
+      ...makeCompletions("weekly", on("full", "2025-01-06")),
+    ];
+
+    expect(getBestRun(habits, completions, "2025-01-08")).toBe(4);
+    expect(getBestRun([], [], "2025-01-08")).toBe(0);
+  });
+});
+
+describe("getCompletionTrend", () => {
+  const today = "2025-01-10";
+  const habits = [daily({ id: "a" })];
+
+  it("has one point per day, oldest first, each averaging the week up to that day", () => {
+    const completions = makeCompletions("a", on("full", ...eachDay("2025-01-04", "2025-01-10")));
+
+    const trend = getCompletionTrend(habits, completions, today, 3);
+
+    expect(trend).toHaveLength(3);
+    expect(trend).toEqual([5 / 7, 6 / 7, 1]);
+  });
+
+  it("is null while nothing has been expected yet", () => {
+    const young = [daily({ id: "a", createdAt: today })];
+    expect(getCompletionTrend(young, [], today, 2)).toEqual([null, null]);
   });
 });

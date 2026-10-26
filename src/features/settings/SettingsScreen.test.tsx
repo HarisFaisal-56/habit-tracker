@@ -78,7 +78,7 @@ describe("SettingsScreen", () => {
       await repository.setHabitArchived(habit.id, true);
       const { user } = renderApp("/settings", repository);
 
-      await user.click(section("Backup").getByRole("button", { name: "Export backup" }));
+      await user.click(section("Your data").getByRole("button", { name: "Export backup" }));
 
       expect(await screen.findByText("Exported 1 habit, 0 check-ins and 0 reviews.")).toBeVisible();
       const [fileName, contents, mimeType] = vi.mocked(saveTextFile).mock.calls[0] ?? [];
@@ -97,7 +97,7 @@ describe("SettingsScreen", () => {
       vi.mocked(pickTextFile).mockResolvedValue(backupText("Imported habit"));
       const { user } = renderApp("/settings", repository);
 
-      await user.click(section("Backup").getByRole("button", { name: "Import backup" }));
+      await user.click(section("Your data").getByRole("button", { name: "Import backup" }));
 
       const confirm = await screen.findByRole("group", { name: "Confirm import" });
       expect(confirm).toHaveTextContent("5 January 2025");
@@ -117,7 +117,7 @@ describe("SettingsScreen", () => {
       vi.mocked(pickTextFile).mockResolvedValue(backupText("Imported habit"));
       const { user } = renderApp("/settings", repository);
 
-      await user.click(section("Backup").getByRole("button", { name: "Import backup" }));
+      await user.click(section("Your data").getByRole("button", { name: "Import backup" }));
       const confirm = await screen.findByRole("group", { name: "Confirm import" });
       await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
 
@@ -131,7 +131,7 @@ describe("SettingsScreen", () => {
       vi.mocked(pickTextFile).mockResolvedValue('{"app":"something-else"}');
       const { user } = renderApp("/settings", repository);
 
-      await user.click(section("Backup").getByRole("button", { name: "Import backup" }));
+      await user.click(section("Your data").getByRole("button", { name: "Import backup" }));
 
       expect(await screen.findByText("This file isn't a Habit Tracker backup.")).toBeVisible();
       expect(screen.queryByRole("group", { name: "Confirm import" })).not.toBeInTheDocument();
@@ -142,13 +142,13 @@ describe("SettingsScreen", () => {
       vi.mocked(pickTextFile).mockResolvedValue(null);
       const { user } = renderApp("/settings");
 
-      await user.click(section("Backup").getByRole("button", { name: "Import backup" }));
+      await user.click(section("Your data").getByRole("button", { name: "Import backup" }));
 
       await waitFor(() => {
         expect(pickTextFile).toHaveBeenCalledWith(".json,application/json");
       });
       expect(screen.queryByRole("group", { name: "Confirm import" })).not.toBeInTheDocument();
-      expect(section("Backup").getByRole("status")).toBeEmptyDOMElement();
+      expect(section("Your data").getByRole("status")).toBeEmptyDOMElement();
     });
   });
 
@@ -193,6 +193,7 @@ describe("SettingsScreen", () => {
     it("explains when the browser can't show notifications", () => {
       renderApp("/settings");
       expect(section("Reminders").getByText(/can’t show notifications/)).toBeInTheDocument();
+      expect(section("Reminders").getByRole("switch", { name: "Habit reminders" })).toBeDisabled();
     });
 
     it("asks for permission and turns reminders on", async () => {
@@ -201,10 +202,14 @@ describe("SettingsScreen", () => {
       await repository.createHabit({ ...reading, reminderTime: "20:00" });
       const { user } = renderApp("/settings", repository);
 
-      await user.click(section("Reminders").getByRole("button", { name: "Turn on reminders" }));
+      const toggle = section("Reminders").getByRole("switch", { name: "Habit reminders" });
+      expect(toggle).toHaveAttribute("aria-checked", "false");
+      await user.click(toggle);
 
       expect(FakeNotification.requestPermission).toHaveBeenCalledOnce();
-      expect(await section("Reminders").findByText("Reminders are on.")).toBeVisible();
+      await waitFor(() => {
+        expect(toggle).toHaveAttribute("aria-checked", "true");
+      });
       expect(useSettings.getState().remindersEnabled).toBe(true);
       expect(section("Reminders").getByText(/1 habit has a reminder time/)).toBeVisible();
       // The web can't deliver reminders to a closed app; say so plainly.
@@ -227,17 +232,19 @@ describe("SettingsScreen", () => {
       useSettings.getState().setRemindersEnabled(true);
       const { user } = renderApp("/settings");
 
-      await user.click(section("Reminders").getByRole("button", { name: "Turn off reminders" }));
+      const toggle = section("Reminders").getByRole("switch", { name: "Habit reminders" });
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+      await user.click(toggle);
 
       expect(useSettings.getState().remindersEnabled).toBe(false);
-      expect(section("Reminders").getByRole("button", { name: "Turn on reminders" })).toBeVisible();
+      expect(toggle).toHaveAttribute("aria-checked", "false");
     });
 
     it("explains how to recover when notifications are blocked", async () => {
       installFakeNotification("default", "denied");
       const { user } = renderApp("/settings");
 
-      await user.click(section("Reminders").getByRole("button", { name: "Turn on reminders" }));
+      await user.click(section("Reminders").getByRole("switch", { name: "Habit reminders" }));
 
       expect(await section("Reminders").findByText(/blocked for this site/)).toBeVisible();
       expect(section("Reminders").getByText(/reminders can’t be sent/)).toBeVisible();
@@ -246,9 +253,15 @@ describe("SettingsScreen", () => {
   });
 
   describe("install", () => {
-    it("explains how to install when the browser offers no prompt", () => {
-      renderApp("/settings");
-      expect(section("Install").getByText(/in your browser’s menu/)).toBeInTheDocument();
+    it("explains how to install when the browser offers no prompt", async () => {
+      const { user } = renderApp("/settings");
+      expect(section("Your data").queryByText(/in your browser’s menu/)).not.toBeInTheDocument();
+
+      await user.click(
+        section("Your data").getByRole("button", { name: "Install on this device" }),
+      );
+
+      expect(section("Your data").getByText(/in your browser’s menu/)).toBeInTheDocument();
     });
 
     it("offers an Install button once the browser allows it", async () => {
@@ -263,7 +276,9 @@ describe("SettingsScreen", () => {
       window.dispatchEvent(event);
 
       expect(event.defaultPrevented).toBe(true); // the browser's own banner is suppressed
-      await user.click(await section("Install").findByRole("button", { name: "Install app" }));
+      await user.click(
+        section("Your data").getByRole("button", { name: "Install on this device" }),
+      );
       expect(prompt).toHaveBeenCalledOnce();
       expect(await screen.findByText("Installing…")).toBeVisible();
     });
@@ -271,6 +286,8 @@ describe("SettingsScreen", () => {
 
   it("shows the app version", () => {
     renderApp("/settings");
-    expect(section("About").getByText(/^version \d+\.\d+\.\d+$/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/^Habit Tracker \d+\.\d+\.\d+ · Your data stays on this device$/),
+    ).toBeInTheDocument();
   });
 });

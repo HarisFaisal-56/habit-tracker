@@ -28,7 +28,7 @@ export function UpdatePrompt() {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 px-4 pb-safe">
       <div
         role="status"
-        className="pointer-events-auto mx-auto mb-18 flex max-w-md items-center gap-2 rounded-2xl bg-stone-900 py-2 pr-2 pl-4 text-sm text-white shadow-lg dark:bg-stone-100 dark:text-stone-900"
+        className="pointer-events-auto mx-auto mb-18 flex max-w-md items-center gap-2 rounded-2xl border border-line bg-surface py-2 pr-2 pl-4 text-sm text-ink shadow-lg"
       >
         <p className="flex-1">
           {needRefresh ? "A new version is ready." : "Ready to work offline."}
@@ -42,11 +42,7 @@ export function UpdatePrompt() {
             Reload
           </Button>
         )}
-        <Button
-          variant="ghost"
-          onClick={close}
-          className="text-white hover:bg-white/10 active:bg-white/10 dark:text-stone-900 dark:hover:bg-stone-900/10"
-        >
+        <Button variant="ghost" onClick={close} className="text-muted">
           {needRefresh ? "Later" : "OK"}
         </Button>
       </div>

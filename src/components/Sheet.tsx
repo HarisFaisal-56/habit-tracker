@@ -34,7 +34,7 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
         // Clicks on the dialog element itself (not its content) are on the backdrop.
         if (event.target === event.currentTarget) onClose();
       }}
-      className="mx-0 mt-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-3xl bg-white p-0 text-stone-900 shadow-xl backdrop:bg-stone-950/50 motion-safe:open:animate-sheet-in sm:m-auto sm:max-w-lg sm:rounded-3xl dark:bg-stone-900 dark:text-stone-100"
+      className="mx-0 mt-auto mb-0 max-h-[90dvh] w-full max-w-none overflow-y-auto overscroll-contain rounded-t-3xl border border-line bg-surface p-0 text-ink shadow-xl backdrop:bg-canvas/70 motion-safe:open:animate-sheet-in sm:m-auto sm:max-w-lg sm:rounded-3xl"
     >
       {open && (
         <div className="flex flex-col gap-4 px-4 pt-3 pb-safe-4">

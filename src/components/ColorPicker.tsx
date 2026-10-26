@@ -27,10 +27,10 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               aria-label={HABIT_COLORS[key].label}
               className="peer sr-only"
             />
-            <span className="flex size-11 cursor-pointer items-center justify-center rounded-full peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600">
+            <span className="flex size-11 cursor-pointer items-center justify-center rounded-full peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text">
               <span
                 className={clsx(
-                  "flex size-8 items-center justify-center rounded-full text-white",
+                  "flex size-8 items-center justify-center rounded-full text-accent-ink",
                   HABIT_COLORS[key].swatch,
                 )}
               >

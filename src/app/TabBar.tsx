@@ -4,27 +4,24 @@ import { tabs } from "./tabs";
 
 export function TabBar() {
   return (
-    <nav
-      aria-label="Main"
-      className="sticky bottom-0 border-t border-stone-200 bg-stone-50/95 pb-safe backdrop-blur dark:border-stone-800 dark:bg-stone-950/95"
-    >
-      <ul className="mx-auto flex w-full max-w-2xl">
+    <nav aria-label="Main" className="shrink-0 bg-canvas px-6 pt-2 pb-safe-6">
+      <ul className="mx-auto grid w-full max-w-md grid-cols-6 rounded-full border border-line-strong bg-bar p-1.5">
         {tabs.map(({ to, label, icon: Icon }) => (
-          <li key={to} className="flex-1">
+          <li key={to} className="flex justify-center">
             <NavLink
               to={to}
               end={to === "/"}
               className={({ isActive }) =>
                 clsx(
-                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg text-xs font-medium motion-safe:transition-colors",
+                  "flex h-12 w-12.5 items-center justify-center rounded-2xl motion-safe:transition-colors",
                   isActive
-                    ? "text-emerald-700 dark:text-emerald-400"
-                    : "text-stone-500 active:text-stone-900 dark:text-stone-400 dark:active:text-stone-100",
+                    ? "bg-accent text-accent-ink"
+                    : "text-muted hover:text-ink active:text-ink",
                 )
               }
             >
-              <Icon aria-hidden="true" className="size-6" strokeWidth={2} />
-              <span>{label}</span>
+              <Icon aria-hidden="true" className="size-5.5" strokeWidth={1.75} />
+              <span className="sr-only">{label}</span>
             </NavLink>
           </li>
         ))}

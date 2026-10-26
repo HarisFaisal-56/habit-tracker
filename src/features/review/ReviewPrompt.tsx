@@ -14,12 +14,12 @@ export function ReviewPrompt({ today }: { today: DateKey }) {
   return (
     <Link
       to="/review"
-      className="flex min-h-14 items-center gap-3 rounded-2xl bg-emerald-50 p-3 text-emerald-900 hover:bg-emerald-100 active:bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-100 dark:hover:bg-emerald-900"
+      className="flex min-h-14 items-center gap-3 rounded-3xl border border-accent/30 bg-accent/10 p-4 text-ink hover:bg-accent/15 active:bg-accent/15"
     >
-      <NotebookPen aria-hidden="true" className="size-5 shrink-0" />
+      <NotebookPen aria-hidden="true" className="size-5 shrink-0 text-accent-text" />
       <span className="flex-1">
         <span className="block font-medium">It’s Sunday: time for your weekly review</span>
-        <span className="block text-sm opacity-80">
+        <span className="block text-sm text-muted">
           Two minutes to look back and set an intention.
         </span>
       </span>

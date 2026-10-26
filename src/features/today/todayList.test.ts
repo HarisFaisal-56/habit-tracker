@@ -63,7 +63,7 @@ describe("buildTodayList", () => {
     const habits = [makeHabit({ id: "a" }), makeHabit({ id: "b" })];
     const list = buildTodayList(habits, makeCompletions("a", on("minimum", today)), today);
 
-    expect(list.progress).toEqual({ done: 1, due: 2 });
+    expect(list.progress).toEqual({ closed: 0, minimum: 1, due: 2 });
   });
 });
 
@@ -75,24 +75,26 @@ describe("summarizeItem", () => {
     return item;
   };
 
-  it("says nothing before a streak starts", () => {
-    expect(summarizeItem(itemFor())).toBeNull();
+  it("shows just the schedule before a streak starts", () => {
+    expect(summarizeItem(itemFor())).toEqual({ text: "Daily", tone: "normal" });
+    const monWed = makeHabit({ schedule: { type: "days", days: [1, 3] } });
+    expect(summarizeItem(itemFor(monWed)).text).toBe("Mon, Wed");
   });
 
-  it("shows a day streak", () => {
+  it("shows a day run", () => {
     const item = itemFor(makeHabit(), on("full", ...eachDay("2025-01-05", today)));
-    expect(summarizeItem(item)).toEqual({ text: "4-day streak", tone: "normal" });
+    expect(summarizeItem(item)).toEqual({ text: "4d run · Daily", tone: "normal" });
   });
 
-  it("warns gently when the streak is one miss from breaking", () => {
+  it("warns gently when the run is one miss from breaking", () => {
     const item = itemFor(makeHabit(), on("full", "2025-01-05", "2025-01-06")); // missed 07
     expect(summarizeItem(item)).toEqual({
-      text: "2-day streak · don’t miss twice",
+      text: "2d run · Daily · don’t miss twice",
       tone: "warning",
     });
   });
 
-  it("shows weekly progress and week streaks", () => {
+  it("shows weekly progress and week runs", () => {
     const habit = makeHabit({ schedule: { type: "weekly", timesPerWeek: 3 } });
     expect(summarizeItem(itemFor(habit, on("full", "2025-01-06")))).toEqual({
       text: "1 of 3 this week",
@@ -105,14 +107,14 @@ describe("summarizeItem", () => {
       ...on("full", "2025-01-06", "2025-01-07", today),
     });
     expect(summarizeItem(met)).toEqual({
-      text: "Goal met this week · 2-week streak",
+      text: "2w run · Goal met this week",
       tone: "success",
     });
   });
 
   it("explains a fully excused week", () => {
     const habit = makeHabit({ schedule: { type: "weekly", timesPerWeek: 1 } });
-    expect(summarizeItem(itemFor(habit, on("skipped", "2025-01-06")))?.text).toBe(
+    expect(summarizeItem(itemFor(habit, on("skipped", "2025-01-06"))).text).toBe(
       "Excused this week",
     );
   });

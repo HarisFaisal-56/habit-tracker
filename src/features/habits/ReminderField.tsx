@@ -21,7 +21,7 @@ export function ReminderField({ value, error, onChange }: ReminderFieldProps) {
   return (
     <div>
       <label htmlFor={id} className="mb-1 block text-sm font-medium">
-        Reminder <span className="font-normal text-stone-500">(optional)</span>
+        Reminder <span className="font-normal text-muted">(optional)</span>
       </label>
       <div className="flex gap-2">
         <input

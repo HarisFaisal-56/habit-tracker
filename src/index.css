@@ -8,6 +8,33 @@
   /* For dense chart labels, e.g. the heatmap's month and weekday names. */
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 1;
+  /* Spaced-out mono captions under habit names, e.g. "12D RUN · DAILY". */
+  --text-caption: 0.6875rem;
+  --text-caption--line-height: 1.2;
+  /* The mono line above each screen title, e.g. "WED · 21 OCT · DAY 294". */
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.2;
+  /* The big completion rate on Stats. */
+  --text-hero: 5.25rem;
+  --text-hero--line-height: 1;
+  /* Run lengths on the Stats cards. */
+  --text-stat: 2.625rem;
+  --text-stat--line-height: 0.85;
+  /* Between sm and base, for secondary lines that need to fit one row. */
+  --text-md: 0.9375rem;
+  --text-md--line-height: 1.4;
+  /* Screen titles. */
+  --text-title: 2rem;
+  --text-title--line-height: 1.05;
+  --text-title--letter-spacing: -0.02em;
+
+  /* System fonts only: SF on Apple devices, which the designs are drawn in. */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas,
+    monospace;
 
   --animate-sheet-in: sheet-in 200ms ease-out;
 
@@ -16,6 +43,70 @@
       transform: translateY(100%);
     }
   }
+}
+
+/* Semantic colours. Light values here; dark overrides below. `static` keeps the
+   variables available to SVG code that references them as var(--color-...). */
+@theme static {
+  --color-canvas: #f6f6f1;
+  --color-surface: #ffffff;
+  /* The docked tab bar. */
+  --color-bar: #ffffff;
+  --color-raised: #ecece5;
+  --color-line: #e2e2da;
+  /* Borders that need to show against `bar` and `raised`. */
+  --color-line-strong: #d3d3ca;
+  --color-ink: #14150f;
+  /* Secondary body text, e.g. the line under the Today rings. */
+  --color-soft: #42463d;
+  --color-muted: #666a60;
+  --color-accent: #cdf52a;
+  --color-accent-ink: #11140a;
+  /* The accent used as text or a stroke on the page background. */
+  --color-accent-text: #566800;
+  /* The accent for marks drawn on the page, e.g. calendar rings and heatmap cells. */
+  --color-accent-mark: #a2c800;
+  /* Text and icons drawn on a habit colour, e.g. the check in a done mark. */
+  --color-on-habit: #ffffff;
+  --color-danger: #c4302b;
+
+  /* The fixed habit palette (see components/habitColors.ts). */
+  --color-habit-emerald: #3f9f3a;
+  --color-habit-teal: #0ea98a;
+  --color-habit-sky: #1a8fd1;
+  --color-habit-indigo: #5b66e0;
+  --color-habit-violet: #8059e6;
+  --color-habit-rose: #de3f7d;
+  --color-habit-orange: #e8661d;
+  --color-habit-amber: #c98a00;
+}
+
+/* Dark values are sampled from the designs in design/. */
+:root.dark {
+  --color-canvas: #07080b;
+  --color-surface: #0f1013;
+  --color-bar: #12141a;
+  --color-raised: #1b1d22;
+  --color-line: #1f2023;
+  --color-line-strong: #27292e;
+  --color-ink: #eceef2;
+  --color-soft: #b9c0cc;
+  --color-muted: #8d919b;
+  --color-accent: #d4ff3a;
+  --color-accent-ink: #0b0d04;
+  --color-accent-text: #d4ff3a;
+  --color-accent-mark: #d4ff3a;
+  --color-on-habit: #0b0d04;
+  --color-danger: #ff6b6b;
+
+  --color-habit-emerald: #8be45f;
+  --color-habit-teal: #3be8c4;
+  --color-habit-sky: #5cc8ff;
+  --color-habit-indigo: #8c9cff;
+  --color-habit-violet: #b79cff;
+  --color-habit-rose: #ff6fa7;
+  --color-habit-orange: #ff8a4c;
+  --color-habit-amber: #ffc94d;
 }
 
 /* Safe-area padding for notched devices (index.html sets viewport-fit=cover). */
@@ -33,10 +124,132 @@
 @utility pb-safe-4 {
   padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom));
 }
+/* Room under the docked tab bar: the gap in the designs, plus the home indicator. */
+@utility pb-safe-6 {
+  padding-bottom: calc(--spacing(6) + env(safe-area-inset-bottom));
+}
+/* Space above a screen's title: the status bar on notched phones, or a minimum gap. */
+@utility pt-screen {
+  padding-top: calc(max(env(safe-area-inset-top), --spacing(6)) + --spacing(7));
+}
 
 /* Stops iOS showing its callout menu during a long press. */
 @utility touch-callout-none {
   -webkit-touch-callout: none;
+}
+
+/* Small spaced-out monospace caption, e.g. "1D RUN · DAILY". */
+@utility label {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* The mono line above a screen title, e.g. "WED · 21 OCT · DAY 294". */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  line-height: var(--text-eyebrow--line-height);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* A section's mono caption, a size down from the eyebrow, e.g. "APPEARANCE" or "BY ORBIT". */
+@utility section-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* A soft halo in the current text colour, e.g. around a habit's colour dot. */
+@utility glow-current {
+  box-shadow: 0 0 --spacing(2) color-mix(in oklab, currentColor 55%, transparent);
+}
+
+/* A soft lime light under the main action, e.g. the add-habit button. */
+@utility glow-accent {
+  box-shadow: 0 --spacing(3) --spacing(8) --spacing(-2)
+    color-mix(in oklab, var(--color-accent) 40%, transparent);
+}
+
+/* Keeps a 44px touch target around a control drawn smaller than that. */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 50% 0 auto;
+    min-height: 44px;
+    height: 100%;
+    transform: translateY(-50%);
+  }
+}
+
+/* A coloured haze behind a screen, like light from off-screen. Pair with a
+   position (glow-at-*) and a colour (glow-*). Only shown in dark mode. */
+@utility screen-glow {
+  position: absolute;
+  /* Full viewport width, so the haze never shows an edge beside the content column. */
+  top: --spacing(-16);
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  height: 40rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 45% at var(--glow-x, 50%) var(--glow-y, 0%),
+    color-mix(in oklab, var(--glow-color, var(--color-accent)) 12%, transparent),
+    transparent 75%
+  );
+  opacity: 0;
+  :root.dark & {
+    opacity: 1;
+  }
+}
+@utility glow-at-top {
+  --glow-x: 50%;
+  --glow-y: 12%;
+}
+@utility glow-at-top-left {
+  --glow-x: 5%;
+  --glow-y: 10%;
+}
+@utility glow-at-top-right {
+  --glow-x: 95%;
+  --glow-y: 10%;
+}
+/* Behind the Stats chart, a little below the title. */
+@utility glow-at-chart {
+  --glow-x: 50%;
+  --glow-y: 33%;
+}
+/* Behind the Today rings. */
+@utility glow-at-rings {
+  --glow-x: 50%;
+  --glow-y: 50%;
+}
+@utility glow-lime {
+  --glow-color: var(--color-accent);
+}
+@utility glow-sky {
+  --glow-color: var(--color-habit-sky);
+}
+@utility glow-rose {
+  --glow-color: var(--color-habit-rose);
+}
+@utility glow-violet {
+  --glow-color: var(--color-habit-violet);
+}
+@utility glow-neutral {
+  --glow-color: var(--color-ink);
 }
 
 @layer base {
@@ -48,8 +261,19 @@
   }
 
   body {
-    @apply bg-stone-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;
+    @apply bg-canvas font-sans text-ink antialiased;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* A faint starfield behind everything in dark mode. It stays put while content scrolls. */
+  :root.dark body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image: url("/stars.svg");
+    background-size: 390px 844px;
   }
 
   /* Keep the page behind an open sheet from scrolling. */
@@ -58,6 +282,6 @@
   }
 
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-emerald-600 dark:outline-emerald-400;
+    @apply outline-2 outline-offset-2 outline-accent-text;
   }
 }

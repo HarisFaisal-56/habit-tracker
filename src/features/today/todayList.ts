@@ -4,6 +4,7 @@ import type { Completion, Habit } from "../../domain/habit";
 import { getWeekProgress, isDueOn, type WeekProgress } from "../../domain/schedule";
 import { getTodayProgress, type TodayProgress } from "../../domain/stats";
 import { getStreak, type StreakSummary } from "../../domain/streaks";
+import { describeScheduleShort } from "../habits/describeSchedule";
 
 export type TodayItem = {
   habit: Habit;
@@ -53,21 +54,32 @@ export function buildTodayList(
 
 export type ItemSummary = { text: string; tone: "normal" | "warning" | "success" };
 
-/** The short line under a habit's name, or null when there's nothing to say yet. */
-export function summarizeItem({ streak, week }: TodayItem): ItemSummary | null {
+/**
+ * The short caption under a habit's name: its run, then its schedule or weekly
+ * progress, e.g. "12d run · Daily" or "2d run · 2 of 3 this week".
+ */
+export function summarizeItem({ habit, streak, week }: TodayItem): ItemSummary {
+  const parts: string[] = [];
+  if (streak.current > 0) {
+    parts.push(`${String(streak.current)}${streak.unit === "weeks" ? "w" : "d"} run`);
+  }
+
+  let tone: ItemSummary["tone"] = "normal";
   if (week) {
-    const streakText = streak.current > 0 ? ` · ${String(streak.current)}-week streak` : "";
-    if (week.target === 0) return { text: `Excused this week${streakText}`, tone: "normal" };
-    if (week.met) return { text: `Goal met this week${streakText}`, tone: "success" };
-    return {
-      text: `${String(week.done)} of ${String(week.target)} this week${streakText}`,
-      tone: "normal",
-    };
+    if (week.target === 0) {
+      parts.push("Excused this week");
+    } else if (week.met) {
+      parts.push("Goal met this week");
+      tone = "success";
+    } else {
+      parts.push(`${String(week.done)} of ${String(week.target)} this week`);
+    }
+  } else {
+    parts.push(describeScheduleShort(habit.schedule));
+    if (streak.unit === "days" && streak.atRisk) {
+      parts.push("don’t miss twice");
+      tone = "warning";
+    }
   }
-  if (streak.current === 0) return null;
-  const days = `${String(streak.current)}-day streak`;
-  if (streak.unit === "days" && streak.atRisk) {
-    return { text: `${days} · don’t miss twice`, tone: "warning" };
-  }
-  return { text: days, tone: "normal" };
+  return { text: parts.join(" · "), tone };
 }

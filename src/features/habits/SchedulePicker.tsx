@@ -25,7 +25,7 @@ type SchedulePickerProps = {
   onChange: (changes: Partial<HabitFormValues>) => void;
 };
 
-const errorText = "text-sm text-rose-700 dark:text-rose-400";
+const errorText = "text-sm text-danger";
 
 export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps) {
   const daysErrorId = useId();
@@ -72,10 +72,8 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
                   <span
                     aria-hidden="true"
                     className={clsx(
-                      "flex size-11 cursor-pointer items-center justify-center rounded-full text-sm font-semibold peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600",
-                      checked
-                        ? "bg-emerald-700 text-white dark:bg-emerald-600"
-                        : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300",
+                      "flex size-11 cursor-pointer items-center justify-center rounded-full text-sm font-semibold peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text",
+                      checked ? "bg-accent text-accent-ink" : "bg-raised text-muted",
                     )}
                   >
                     {WEEKDAY_NAMES[day].charAt(0)}
@@ -102,7 +100,7 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
               onClick={() => {
                 onChange({ timesPerWeek: values.timesPerWeek - 1 });
               }}
-              className="bg-stone-100 dark:bg-stone-800"
+              className="bg-raised"
             />
             <output
               aria-live="polite"
@@ -120,10 +118,10 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
               onClick={() => {
                 onChange({ timesPerWeek: values.timesPerWeek + 1 });
               }}
-              className="bg-stone-100 dark:bg-stone-800"
+              className="bg-raised"
             />
           </div>
-          <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+          <p className="mt-2 text-sm text-muted">
             Any days you like. Your streak counts weeks where you hit the goal.
           </p>
           {errors.timesPerWeek && (

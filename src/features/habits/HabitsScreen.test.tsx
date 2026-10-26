@@ -47,7 +47,7 @@ describe("HabitsScreen", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "New habit" })).not.toBeInTheDocument();
     });
-    expect(await screen.findByRole("button", { name: /Read/ })).toHaveTextContent("Every day");
+    expect(await screen.findByRole("button", { name: /Read/ })).toHaveTextContent("Daily");
     expect(await repository.listHabits()).toMatchObject([
       {
         name: "Read",
@@ -164,15 +164,17 @@ describe("HabitsScreen", () => {
     await user.click(within(sheet("Edit habit")).getByRole("button", { name: "Archive habit" }));
 
     await waitFor(() => {
-      expect(namesIn("Archived habits")).toEqual(["Read"]);
+      expect(namesIn("Your habits")).toEqual(["Run"]);
     });
-    expect(namesIn("Your habits")).toEqual(["Run"]);
+    await user.click(screen.getByRole("button", { name: "Archived · 1" }));
+    expect(namesIn("Archived habits")).toEqual(["Read"]);
 
     // Restore it.
     await user.click(
       within(screen.getByRole("list", { name: "Archived habits" })).getByRole("button"),
     );
     await user.click(within(sheet("Edit habit")).getByRole("button", { name: "Restore habit" }));
+    await user.click(screen.getByRole("button", { name: "Active" }));
     await waitFor(() => {
       expect(namesIn("Your habits")).toEqual(["Read", "Run"]);
     });
@@ -180,9 +182,7 @@ describe("HabitsScreen", () => {
     // Archive again, then delete for good (with confirmation).
     await user.click(screen.getByRole("button", { name: /Read/ }));
     await user.click(within(sheet("Edit habit")).getByRole("button", { name: "Archive habit" }));
-    await waitFor(() => {
-      expect(screen.getByRole("list", { name: "Archived habits" })).toBeInTheDocument();
-    });
+    await user.click(await screen.findByRole("button", { name: "Archived · 1" }));
     await user.click(
       within(screen.getByRole("list", { name: "Archived habits" })).getByRole("button"),
     );
@@ -194,6 +194,7 @@ describe("HabitsScreen", () => {
     await waitFor(() => {
       expect(screen.queryByRole("list", { name: "Archived habits" })).not.toBeInTheDocument();
     });
+    expect(screen.getByRole("button", { name: "Archived · 0" })).toBeInTheDocument();
     expect(await repository.getHabit(read.id)).toBeUndefined();
     expect(await repository.listCompletions()).toEqual([]);
   });
@@ -206,7 +207,10 @@ describe("HabitsScreen", () => {
     const { user } = renderApp("/habits", repository);
     await screen.findByRole("button", { name: /Meditate/ });
 
-    await user.click(screen.getByRole("button", { name: "Reorder" }));
+    const [grip] = screen.getAllByRole("button", { name: "Reorder habits" });
+    if (!grip) throw new Error("No reorder grip");
+    await user.click(grip);
+    expect(screen.queryByRole("button", { name: "Reorder habits" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move Read up" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Move Meditate down" })).toBeDisabled();
 
@@ -260,7 +264,7 @@ describe("HabitsScreen", () => {
     await user.click(within(form).getByRole("button", { name: "Add habit" }));
 
     const row = await screen.findByRole("button", { name: /Read/ });
-    expect(row).toHaveTextContent("Every day · reminder 8:30 PM");
+    expect(row).toHaveTextContent("Daily · reminder 8:30 PM");
     expect((await repository.listHabits())[0]?.reminderTime).toBe("20:30");
 
     await user.click(row);

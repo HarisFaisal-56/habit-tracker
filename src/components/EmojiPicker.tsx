@@ -31,7 +31,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
               }}
               className="peer sr-only"
             />
-            <span className="flex h-12 cursor-pointer items-center justify-center rounded-xl text-2xl peer-checked:bg-emerald-100 peer-checked:ring-2 peer-checked:ring-emerald-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-600 dark:peer-checked:bg-emerald-950 dark:peer-checked:ring-emerald-400">
+            <span className="flex h-12 cursor-pointer items-center justify-center rounded-xl text-2xl peer-checked:bg-accent/15 peer-checked:ring-2 peer-checked:ring-accent-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text">
               {emoji}
             </span>
           </label>

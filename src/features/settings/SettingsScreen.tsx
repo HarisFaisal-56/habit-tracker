@@ -1,12 +1,13 @@
 import clsx from "clsx";
 import { format } from "date-fns";
-import { Bell, BellOff, Download, Smartphone, Trash, Upload } from "lucide-react";
+import { Bell, Download, Smartphone, Upload, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { useInstallState } from "../../app/useInstall";
 import { useToday } from "../../app/useToday";
 import { Button } from "../../components/Button";
 import { Screen } from "../../components/Screen";
 import { SegmentedControl } from "../../components/SegmentedControl";
+import { Switch } from "../../components/Switch";
 import type { Backup } from "../../data/backup";
 import { useRepository } from "../../data/RepositoryContext";
 import { useHabits } from "../../data/useData";
@@ -22,44 +23,63 @@ import { useSettings, type ThemePreference } from "../../store/settingsStore";
 import { describeData } from "./describeData";
 
 const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+  { value: "system", label: "System" },
 ];
 
 // Backups pull in Zod, so they load on first use rather than with the app.
 // The service worker precaches the chunk, so this still works offline.
 const loadBackup = () => import("../../data/backup");
 
-const mutedText = "text-sm text-stone-500 dark:text-stone-400";
+const mutedText = "text-sm text-muted";
 
 type Message = { tone: "success" | "error"; text: string };
 
 export function SettingsScreen() {
   return (
-    <Screen title="Settings">
+    <Screen title="Settings" subtitle="Mission control">
       <AppearanceSection />
       <RemindersSection />
-      <InstallSection />
-      <BackupSection />
+      <DataSection />
       <ResetSection />
-      <AboutSection />
+      <AboutFooter />
     </Screen>
   );
 }
 
-function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+type SettingsSectionProps = {
+  title: string;
+  children: ReactNode;
+  /** Rows separated by lines, edge to edge; otherwise one padded block. */
+  list?: boolean;
+  /** Shown under the card, e.g. a status message. */
+  footer?: ReactNode;
+};
+
+function SettingsSection({ title, children, list = false, footer }: SettingsSectionProps) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h2 id={headingId} className="text-sm font-semibold text-stone-500 dark:text-stone-400">
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="section-label px-1">
         {title}
       </h2>
-      <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-stone-900">
+      <div
+        className={clsx(
+          "flex flex-col rounded-3xl border border-line bg-surface",
+          list ? "divide-y divide-line overflow-hidden" : "gap-3 p-3.5",
+        )}
+      >
         {children}
       </div>
+      {footer}
     </section>
   );
+}
+
+/** Extra text or controls under a list's rows, e.g. a confirmation or a status message. */
+function RowNote({ children }: { children: ReactNode }) {
+  return <div className="flex flex-col gap-3 px-4 py-3.5">{children}</div>;
 }
 
 function StatusMessage({ message }: { message: Message | null }) {
@@ -67,14 +87,39 @@ function StatusMessage({ message }: { message: Message | null }) {
     <p
       role="status"
       className={clsx(
-        "text-sm empty:hidden",
-        message?.tone === "error"
-          ? "text-rose-700 dark:text-rose-400"
-          : "text-emerald-700 dark:text-emerald-400",
+        "px-1 text-sm empty:hidden",
+        message?.tone === "error" ? "text-danger" : "text-accent-text",
       )}
     >
       {message?.text}
     </p>
+  );
+}
+
+type ActionRowProps = {
+  icon: LucideIcon;
+  label: string;
+  /** A short mono tag on the right, e.g. "JSON". Decorative. */
+  tag: string;
+  onClick: () => void;
+};
+
+/** A tappable list row: an icon on a tile, the action, and a tag. */
+function ActionRow({ icon: Icon, label, tag, onClick }: ActionRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-14 w-full items-center gap-4 px-4 py-2.5 text-left hover:bg-raised/50 active:bg-raised/50"
+    >
+      <span className="flex size-8.5 shrink-0 items-center justify-center rounded-xl bg-raised">
+        <Icon aria-hidden="true" className="size-5 text-accent-text" strokeWidth={1.75} />
+      </span>
+      <span className="flex-1 text-base">{label}</span>
+      <span aria-hidden="true" className="label tracking-normal">
+        {tag}
+      </span>
+    </button>
   );
 }
 
@@ -84,7 +129,6 @@ function AppearanceSection() {
   return (
     <SettingsSection title="Appearance">
       <SegmentedControl label="Theme" options={THEME_OPTIONS} value={theme} onChange={setTheme} />
-      <p className={mutedText}>System follows your device’s light or dark setting.</p>
     </SettingsSection>
   );
 }
@@ -108,6 +152,7 @@ function RemindersSection() {
   }, []);
 
   const withReminder = habits?.filter((habit) => habit.reminderTime !== undefined).length ?? 0;
+  const on = enabled && permission === "granted";
 
   const turnOn = async () => {
     setMessage(null);
@@ -137,114 +182,66 @@ function RemindersSection() {
     }
   };
 
+  let detail: string;
   if (permission === "unsupported") {
-    return (
-      <SettingsSection title="Reminders">
-        <p className={mutedText}>
-          {isIos() && !isInstalled()
-            ? "On iPhone and iPad, install the app to your Home Screen first (see Install below), then turn on reminders here."
-            : "This browser can’t show notifications, so reminders aren’t available here."}
-        </p>
-      </SettingsSection>
-    );
+    detail =
+      isIos() && !isInstalled()
+        ? "On iPhone and iPad, install the app to your Home Screen first, then turn on reminders here."
+        : "This browser can’t show notifications, so reminders aren’t available here.";
+  } else if (permission === "denied") {
+    detail =
+      "Notifications are blocked for this site. Allow them in your browser’s site settings, then come back here.";
+  } else if (!on) {
+    detail = "At each habit’s time, if it’s still open";
+  } else if (withReminder === 0) {
+    detail = "No habit has a reminder time yet. Add one when editing a habit.";
+  } else {
+    detail = `${String(withReminder)} habit${withReminder === 1 ? " has" : "s have"} a reminder time. Change times when editing a habit.`;
   }
 
-  const on = enabled && permission === "granted";
-
   return (
-    <SettingsSection title="Reminders">
-      <p>Get a nudge at the time you choose for each habit, unless you’ve already logged it.</p>
-      {permission === "denied" ? (
-        <p className={mutedText}>
-          Notifications are blocked for this site. Allow them in your browser’s site settings, then
-          come back here.
-        </p>
-      ) : on ? (
-        <>
-          <p className="font-medium text-emerald-700 dark:text-emerald-400">Reminders are on.</p>
+    <SettingsSection title="Reminders" list footer={<StatusMessage message={message} />}>
+      <div className="flex items-center gap-4 px-4 py-3.5">
+        <div className="min-w-0 flex-1">
+          <p className="text-base">Habit reminders</p>
+          <p className="text-md text-soft">{detail}</p>
+        </div>
+        <Switch
+          label="Habit reminders"
+          checked={on}
+          disabled={permission === "unsupported" || permission === "denied"}
+          onChange={(checked) => {
+            if (checked) {
+              void turnOn();
+            } else {
+              setEnabled(false);
+              setMessage(null);
+            }
+          }}
+        />
+      </div>
+      {on && (
+        <ActionRow icon={Bell} label="Send a test" tag="Test" onClick={() => void sendTest()} />
+      )}
+      {on && !REMINDERS_WORK_WHEN_CLOSED && (
+        <RowNote>
           <p className={mutedText}>
-            {withReminder === 0
-              ? "No habit has a reminder time yet. Add one when editing a habit."
-              : `${String(withReminder)} habit${withReminder === 1 ? " has" : "s have"} a reminder time. Change times when editing a habit.`}
+            Reminders arrive while the app is open or running in the background. Fully closing it
+            pauses them until you open it again.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="secondary"
-              icon={Bell}
-              className="flex-1"
-              onClick={() => void sendTest()}
-            >
-              Send a test
-            </Button>
-            <Button
-              variant="ghost"
-              icon={BellOff}
-              className="flex-1"
-              onClick={() => {
-                setEnabled(false);
-                setMessage(null);
-              }}
-            >
-              Turn off reminders
-            </Button>
-          </div>
-        </>
-      ) : (
-        <Button icon={Bell} onClick={() => void turnOn()}>
-          Turn on reminders
-        </Button>
+        </RowNote>
       )}
-      {!REMINDERS_WORK_WHEN_CLOSED && permission !== "denied" && (
-        <p className={mutedText}>
-          Reminders arrive while the app is open or running in the background. Fully closing it
-          pauses them until you open it again.
-        </p>
-      )}
-      <StatusMessage message={message} />
     </SettingsSection>
   );
 }
 
-function InstallSection() {
-  const installState = useInstallState();
-  const [message, setMessage] = useState<Message | null>(null);
-
-  if (installState === "installed") return null;
-
-  const install = async () => {
-    const outcome = await promptInstall();
-    if (outcome === "accepted") setMessage({ tone: "success", text: "Installing…" });
-  };
-
-  return (
-    <SettingsSection title="Install">
-      <p>Add Habit Tracker to your home screen. It opens like an app and works fully offline.</p>
-      {installState === "available" && (
-        <Button icon={Smartphone} onClick={() => void install()}>
-          Install app
-        </Button>
-      )}
-      {installState === "ios" && (
-        <p className={mutedText}>
-          In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.
-        </p>
-      )}
-      {installState === "unavailable" && (
-        <p className={mutedText}>
-          Look for <strong>Install app</strong> or <strong>Add to Home screen</strong> in your
-          browser’s menu. Not every browser offers it.
-        </p>
-      )}
-      <StatusMessage message={message} />
-    </SettingsSection>
-  );
-}
-
-function BackupSection() {
+function DataSection() {
   const repository = useRepository();
   const today = useToday();
+  const installState = useInstallState();
   const [message, setMessage] = useState<Message | null>(null);
   const [pending, setPending] = useState<Backup | null>(null);
+  const [installHelp, setInstallHelp] = useState(false);
 
   const exportBackup = async () => {
     try {
@@ -290,55 +287,80 @@ function BackupSection() {
     }
   };
 
+  const install = async () => {
+    setMessage(null);
+    if (installState !== "available") {
+      // No prompt to show: explain how to install from the browser instead.
+      setInstallHelp((shown) => !shown);
+      return;
+    }
+    const outcome = await promptInstall();
+    if (outcome === "accepted") setMessage({ tone: "success", text: "Installing…" });
+  };
+
   return (
-    <SettingsSection title="Backup">
-      <p>
-        Your data lives only on this device. Export a backup now and then, and import it to restore
-        or move to another device.
-      </p>
-      {pending ? (
-        <div role="group" aria-label="Confirm import" className="flex flex-col gap-3">
-          <p>
-            Replace all current data with this backup from{" "}
-            {format(new Date(pending.exportedAt), "d MMMM yyyy")}? It has {describeData(pending)}.
-            This can’t be undone.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              className="flex-1"
-              onClick={() => {
-                setPending(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="danger" className="flex-1" onClick={() => void restore(pending)}>
-              Replace my data
-            </Button>
+    <SettingsSection title="Your data" list footer={<StatusMessage message={message} />}>
+      <ActionRow
+        icon={Download}
+        label="Export backup"
+        tag="JSON"
+        onClick={() => void exportBackup()}
+      />
+      <ActionRow
+        icon={Upload}
+        label="Import backup"
+        tag="JSON"
+        onClick={() => void chooseBackup()}
+      />
+      {pending && (
+        <RowNote>
+          <div role="group" aria-label="Confirm import" className="flex flex-col gap-3">
+            <p>
+              Replace all current data with this backup from{" "}
+              {format(new Date(pending.exportedAt), "d MMMM yyyy")}? It has {describeData(pending)}.
+              This can’t be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => {
+                  setPending(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button variant="danger" className="flex-1" onClick={() => void restore(pending)}>
+                Replace my data
+              </Button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button
-            variant="secondary"
-            icon={Download}
-            className="flex-1"
-            onClick={() => void exportBackup()}
-          >
-            Export backup
-          </Button>
-          <Button
-            variant="secondary"
-            icon={Upload}
-            className="flex-1"
-            onClick={() => void chooseBackup()}
-          >
-            Import backup
-          </Button>
-        </div>
+        </RowNote>
       )}
-      <StatusMessage message={message} />
+      {installState !== "installed" && (
+        <ActionRow
+          icon={Smartphone}
+          label="Install on this device"
+          tag="PWA"
+          onClick={() => void install()}
+        />
+      )}
+      {installHelp && installState !== "installed" && installState !== "available" && (
+        <RowNote>
+          <p className={mutedText}>
+            {installState === "ios" ? (
+              <>
+                In Safari, tap the Share button, then <strong>Add to Home Screen</strong>.
+              </>
+            ) : (
+              <>
+                Look for <strong>Install app</strong> or <strong>Add to Home screen</strong> in your
+                browser’s menu. Not every browser offers it.
+              </>
+            )}
+          </p>
+        </RowNote>
+      )}
     </SettingsSection>
   );
 }
@@ -362,9 +384,16 @@ function ResetSection() {
   };
 
   return (
-    <SettingsSection title="Reset">
+    <section aria-labelledby="reset-heading" className="flex flex-col items-center gap-3">
+      <h2 id="reset-heading" className="sr-only">
+        Reset
+      </h2>
       {confirming ? (
-        <div role="group" aria-label="Confirm reset" className="flex flex-col gap-3">
+        <div
+          role="group"
+          aria-label="Confirm reset"
+          className="flex w-full flex-col gap-3 rounded-3xl border border-line bg-surface p-4"
+        >
           <p>
             Delete all habits, check-ins and reviews on this device? Export a backup first if you
             might want them back.
@@ -385,33 +414,34 @@ function ResetSection() {
           </div>
         </div>
       ) : (
-        <Button
-          variant="danger"
-          icon={Trash}
+        <button
+          type="button"
           onClick={() => {
             setMessage(null);
             setConfirming(true);
           }}
+          className="min-h-11 rounded-2xl px-4 text-lg text-danger hover:bg-raised active:bg-raised"
         >
           Delete all data
-        </Button>
+        </button>
       )}
-      <StatusMessage message={message} />
-    </SettingsSection>
+      <p
+        role="status"
+        className={clsx(
+          "text-sm empty:hidden",
+          message?.tone === "error" ? "text-danger" : "text-accent-text",
+        )}
+      >
+        {message?.text}
+      </p>
+    </section>
   );
 }
 
-function AboutSection() {
+function AboutFooter() {
   return (
-    <SettingsSection title="About">
-      <p>
-        <span className="font-medium">Habit Tracker</span>{" "}
-        <span className={mutedText}>version {__APP_VERSION__}</span>
-      </p>
-      <p className={mutedText}>
-        A calm habit tracker that forgives bad days. No account, no tracking: everything stays on
-        this device and works offline.
-      </p>
-    </SettingsSection>
+    <footer className="section-label pb-2 text-center leading-relaxed text-balance">
+      Habit Tracker {__APP_VERSION__} · Your data stays on this device
+    </footer>
   );
 }

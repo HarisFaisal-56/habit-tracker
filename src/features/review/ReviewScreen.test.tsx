@@ -45,31 +45,28 @@ describe("ReviewScreen", () => {
     renderApp("/review", repository);
 
     expect(await screen.findByText("6–12 January 2025")).toBeInTheDocument();
-    const summary = screen.getByRole("region", { name: "How the week went" });
-    expect(within(summary).getByText("“I am someone who reads”")).toBeInTheDocument();
-    expect(within(summary).getByRole("progressbar", { name: "Read this week" })).toHaveAttribute(
-      "aria-valuetext",
-      "2 of 7 days",
-    );
+    expect(screen.getByText("6–12 Jan")).toBeInTheDocument();
+    const votes = screen.getByRole("region", { name: "Identity votes" });
+    expect(within(votes).getByText("I am someone who reads")).toBeInTheDocument();
+    expect(within(votes).getByText("2 votes")).toBeInTheDocument();
+    // Monday and Tuesday done; Wednesday (today) still to do.
+    expect(screen.getByRole("region", { name: "Check-ins" })).toHaveTextContent("2/3");
   });
 
   it("saves a review, then lets you update it", async () => {
     const repository = await withReadingHabit();
     const { user } = renderApp("/review", repository);
 
-    const save = await screen.findByRole("button", { name: "Save review" });
+    const save = await screen.findByRole("button", { name: /^Lock in week 3$/ });
     expect(save).toBeDisabled(); // nothing written yet
 
     await user.type(screen.getByLabelText("Wins"), "  Read every morning ");
-    await user.type(screen.getByLabelText("Struggles"), "Late nights");
-    await user.type(
-      screen.getByLabelText("One intention for next week"),
-      "Phone out of the bedroom",
-    );
+    await user.type(screen.getByLabelText("Friction"), "Late nights");
+    await user.type(screen.getByLabelText("Next week, I will"), "Phone out of the bedroom");
     await user.click(save);
 
     expect(await screen.findByText("Saved.")).toBeInTheDocument();
-    const update = await screen.findByRole("button", { name: "Update review" });
+    const update = await screen.findByRole("button", { name: "Update week 3" });
     expect(update).toBeDisabled(); // unchanged since saving
     expect(await repository.listWeeklyReviews()).toMatchObject([
       {
@@ -101,8 +98,8 @@ describe("ReviewScreen", () => {
     renderApp("/review", repository);
 
     expect(await screen.findByLabelText("Wins")).toHaveValue("Good start");
-    expect(screen.getByLabelText("One intention for next week")).toHaveValue("Keep going");
-    expect(screen.getByRole("button", { name: "Update review" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Next week, I will")).toHaveValue("Keep going");
+    expect(screen.getByRole("button", { name: "Update week 3" })).toBeInTheDocument();
   });
 
   it("nudges on Sunday until the review is saved", async () => {
@@ -112,7 +109,7 @@ describe("ReviewScreen", () => {
 
     expect(await screen.findByText(/It’s Sunday/)).toBeInTheDocument();
     await user.type(screen.getByLabelText("Wins"), "A calm week");
-    await user.click(screen.getByRole("button", { name: "Save review" }));
+    await user.click(screen.getByRole("button", { name: /^Lock in week 3$/ }));
 
     await waitFor(() => {
       expect(screen.queryByText(/It’s Sunday/)).not.toBeInTheDocument();
@@ -124,7 +121,7 @@ describe("ReviewScreen", () => {
     setDate(2025, 1, 11); // Saturday
     renderApp("/review", repository);
 
-    await screen.findByRole("button", { name: "Save review" });
+    await screen.findByRole("button", { name: /^Lock in week 3$/ });
     expect(screen.queryByText(/It’s Sunday/)).not.toBeInTheDocument();
   });
 
@@ -141,23 +138,21 @@ describe("ReviewScreen", () => {
     const { user } = renderApp("/review", repository);
 
     expect(await screen.findByText("“Read before bed”")).toBeInTheDocument();
-    expect(screen.getByText("Your intention for this week")).toBeInTheDocument();
+    expect(screen.getByText("Last week you promised")).toBeInTheDocument();
 
     // Past reviews are listed and expandable.
     const past = screen.getByRole("region", { name: "Past reviews" });
     await user.click(within(past).getByText("30 December 2024 – 5 January 2025"));
     expect(within(past).getByText("Holidays")).toBeVisible();
 
-    await user.click(screen.getByRole("radio", { name: "Last week" }));
+    await user.selectOptions(screen.getByLabelText("Week"), "last");
 
     expect(
-      screen.getByText("30 December 2024 – 5 January 2025", { selector: "p" }),
+      screen.getByText("30 December 2024 – 5 January 2025", { selector: "span" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Wins")).toHaveValue("Started reading");
-    expect(screen.getByRole("progressbar", { name: "Read last week" })).toHaveAttribute(
-      "aria-valuetext",
-      "1 of 7 days", // created on Monday the 30th, done once that week
-    );
+    // Created on Monday the 30th, done once that week.
+    expect(screen.getByRole("region", { name: "Check-ins" })).toHaveTextContent("1/7");
     expect(screen.queryByRole("region", { name: "Past reviews" })).not.toBeInTheDocument();
   });
 });

@@ -1,8 +1,16 @@
-import { format } from "date-fns";
+import { format, getISOWeek } from "date-fns";
 import { indexCompletionsByHabit, NO_COMPLETIONS } from "../../domain/completions";
-import { addDays, getWeekday, minDateKey, parseDateKey, type DateKey } from "../../domain/dates";
+import {
+  addDays,
+  eachDay,
+  getWeekday,
+  minDateKey,
+  parseDateKey,
+  type DateKey,
+} from "../../domain/dates";
 import type { Completion, Habit, WeeklyReview } from "../../domain/habit";
 import { getWeekProgress, type WeekProgress } from "../../domain/schedule";
+import { summarizeDay } from "../history/historyData";
 
 export const REVIEW_TEXT_MAX_LENGTH = 1000;
 export const INTENTION_MAX_LENGTH = 200;
@@ -23,6 +31,16 @@ export function formatWeekRange(weekStart: DateKey): string {
     return `${format(start, "d MMMM")} – ${format(end, "d MMMM yyyy")}`;
   }
   return `${format(start, "d")}–${format(end, "d MMMM yyyy")}`;
+}
+
+/** "6–12 Jan", "27 Jan – 2 Feb", "30 Dec – 5 Jan": the short form for captions. */
+export function formatWeekRangeShort(weekStart: DateKey): string {
+  const start = parseDateKey(weekStart);
+  const end = parseDateKey(addDays(weekStart, 6));
+  if (start.getMonth() !== end.getMonth()) {
+    return `${format(start, "d MMM")} – ${format(end, "d MMM")}`;
+  }
+  return `${format(start, "d")}–${format(end, "d MMM")}`;
 }
 
 export type WeekHabitSummary = { habit: Habit; progress: WeekProgress };
@@ -58,4 +76,37 @@ export function trimReview(fields: ReviewFields): ReviewFields {
 export function isReviewEmpty(fields: ReviewFields): boolean {
   const { wins, struggles, intention } = trimReview(fields);
   return wins === "" && struggles === "" && intention === "";
+}
+
+/** The ISO week number of the week starting `weekStart`, e.g. 43. */
+export function getWeekNumber(weekStart: DateKey): number {
+  return getISOWeek(parseDateKey(weekStart));
+}
+
+export type DayCheckins = { date: DateKey; done: number; expected: number };
+
+export type WeekCheckins = {
+  /** Monday to Sunday. Days after `today` expect nothing. */
+  days: DayCheckins[];
+  done: number;
+  expected: number;
+};
+
+/** Check-ins done out of those expected, per day and for the week, up to `today`. */
+export function getWeekCheckins(
+  habits: readonly Habit[],
+  completions: readonly Completion[],
+  weekStart: DateKey,
+  today: DateKey,
+): WeekCheckins {
+  const byHabit = indexCompletionsByHabit(completions);
+  const days = eachDay(weekStart, addDays(weekStart, 6)).map((date) => ({
+    date,
+    ...summarizeDay(habits, byHabit, date, today),
+  }));
+  return {
+    days,
+    done: days.reduce((total, day) => total + day.done, 0),
+    expected: days.reduce((total, day) => total + day.expected, 0),
+  };
 }

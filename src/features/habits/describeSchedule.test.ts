@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Schedule } from "../../domain/habit";
-import { describeSchedule } from "./describeSchedule";
+import { makeHabit } from "../../test/factories";
+import { describeSchedule, describeScheduleShort, summarizeHabits } from "./describeSchedule";
 
 const cases: [Schedule, string][] = [
   [{ type: "daily" }, "Every day"],
@@ -18,5 +19,27 @@ const cases: [Schedule, string][] = [
 describe("describeSchedule", () => {
   it.each(cases)("describes %j as %s", (schedule, expected) => {
     expect(describeSchedule(schedule)).toBe(expected);
+  });
+});
+
+describe("describeScheduleShort", () => {
+  it("says Daily for daily habits and otherwise matches describeSchedule", () => {
+    expect(describeScheduleShort({ type: "daily" })).toBe("Daily");
+    expect(describeScheduleShort({ type: "days", days: [1, 3] })).toBe("Mon, Wed");
+    expect(describeScheduleShort({ type: "weekly", timesPerWeek: 3 })).toBe("3 times a week");
+  });
+});
+
+describe("summarizeHabits", () => {
+  it("counts habits by kind and leaves out zero counts", () => {
+    const habits = [
+      makeHabit({ id: "a" }),
+      makeHabit({ id: "b" }),
+      makeHabit({ id: "c", schedule: { type: "weekly", timesPerWeek: 3 } }),
+    ];
+    expect(summarizeHabits(habits)).toBe("03 orbits · 2 daily · 1 weekly");
+    expect(summarizeHabits([makeHabit({ schedule: { type: "days", days: [1] } })])).toBe(
+      "01 orbit · 1 some days",
+    );
   });
 });

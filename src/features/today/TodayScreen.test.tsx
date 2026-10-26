@@ -34,7 +34,7 @@ function tile(name: string): HTMLElement {
 }
 
 function progress() {
-  return screen.getByRole("progressbar", { name: "Habits done today" });
+  return screen.getByRole("progressbar", { name: "Habits closed today" });
 }
 
 async function openOptions(user: ReturnType<typeof renderApp>["user"], name: string) {
@@ -47,7 +47,7 @@ describe("TodayScreen", () => {
     it("welcomes a new user with the app's principles and the date", async () => {
       renderApp("/");
 
-      expect(screen.getByText("Wednesday, 8 January")).toBeInTheDocument();
+      expect(screen.getByText("Wed · 8 Jan · Day 8")).toBeInTheDocument();
       const welcome = await screen.findByRole("region", { name: "Welcome" });
       expect(within(welcome).getByText(/Never miss twice/)).toBeInTheDocument();
       expect(within(welcome).getByText(/Minimum version/)).toBeInTheDocument();
@@ -91,17 +91,17 @@ describe("TodayScreen", () => {
     const { user } = renderApp("/", repository);
 
     await screen.findByText("Read");
-    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 2 done");
+    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 2 closed");
     expect(tile("Read")).toHaveAttribute("aria-pressed", "false");
 
     await user.click(tile("Read"));
 
     await waitFor(() => {
-      expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 done");
+      expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 closed");
     });
     expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
     expect(tile("Read")).toHaveAccessibleName(/Done$/);
-    expect(screen.getByText("1 to go")).toBeInTheDocument();
+    expect(screen.getByText("1 orbit still open")).toBeInTheDocument();
     expect(await repository.listCompletions()).toMatchObject([
       { date: "2025-01-08", kind: "full" },
     ]);
@@ -109,7 +109,7 @@ describe("TodayScreen", () => {
     await user.click(tile("Read"));
 
     await waitFor(() => {
-      expect(progress()).toHaveAttribute("aria-valuetext", "0 of 2 done");
+      expect(progress()).toHaveAttribute("aria-valuetext", "0 of 2 closed");
     });
     expect(await repository.listCompletions()).toEqual([]);
   });
@@ -139,9 +139,11 @@ describe("TodayScreen", () => {
       expect(tile("Read")).toHaveAccessibleName(/Minimum version done$/);
     });
     expect(screen.queryByRole("dialog", { name: /Read/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Minimum: One page")).toBeInTheDocument();
+    expect(tile("Read")).toHaveTextContent("Daily · Min One page");
     expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
-    expect(progress()).toHaveAttribute("aria-valuetext", "1 of 1 done");
+    // The minimum version counts for the streak but doesn't close the orbit.
+    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 closed, 1 kept at minimum");
+    expect(screen.getByText("All done for today · 1 kept at minimum")).toBeInTheDocument();
   });
 
   it("skips a habit without counting it as due", async () => {
@@ -157,12 +159,12 @@ describe("TodayScreen", () => {
     await waitFor(() => {
       expect(tile("Read")).toHaveAccessibleName(/Skipped$/);
     });
-    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 done");
+    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 closed");
 
     // Tapping a skipped habit marks it done after all.
     await user.click(tile("Read"));
     await waitFor(() => {
-      expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 done");
+      expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 closed");
     });
   });
 
@@ -218,14 +220,14 @@ describe("TodayScreen", () => {
     const otherSection = (await screen.findByRole("heading", { name: "Not due today" }))
       .parentElement as HTMLElement;
     expect(within(otherSection).getByText("Run")).toBeInTheDocument();
-    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 done");
+    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 closed");
 
     await user.click(tile("Run"));
 
     await waitFor(() => {
       expect(tile("Run")).toHaveAttribute("aria-pressed", "true");
     });
-    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 done");
+    expect(progress()).toHaveAttribute("aria-valuetext", "0 of 1 closed");
   });
 
   it("says when nothing is due", async () => {
@@ -248,7 +250,7 @@ describe("TodayScreen", () => {
 
     renderApp("/", repository);
 
-    expect(await screen.findByText("3-day streak · don’t miss twice")).toBeInTheDocument();
+    expect(await screen.findByText("3d run · Daily · don’t miss twice")).toBeInTheDocument();
   });
 
   it("shows weekly goal progress", async () => {

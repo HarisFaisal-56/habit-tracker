@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { eachDay } from "../../domain/dates";
 import { makeCompletions, makeHabit, on } from "../../test/factories";
-import { buildStats, formatRate, formatStreak, formatWeekProgress } from "./statsData";
+import {
+  buildStats,
+  formatRate,
+  formatRateChange,
+  formatStreak,
+  formatWeekProgress,
+} from "./statsData";
 
 const today = "2025-01-10"; // Friday
 
@@ -44,6 +50,35 @@ describe("buildStats", () => {
     expect(stats.habits).toHaveLength(2);
     expect(stats.habits[1]?.streak.current).toBe(0);
     expect(stats.overall.rate).toBe(1);
+  });
+});
+
+describe("buildStats: comparison, trend and runs", () => {
+  it("compares with the previous window and reports a point per day plus the runs", () => {
+    const read = makeHabit({ id: "read", createdAt: "2025-01-01" });
+    // Done 01-06..01-10; before that (01-01..01-05) nothing, so the previous week was worse.
+    const completions = makeCompletions("read", on("full", ...eachDay("2025-01-06", today)));
+
+    const stats = buildStats([read], completions, today, 5);
+
+    expect(stats.trend).toHaveLength(5);
+    expect(stats.trend.at(-1)).toBeCloseTo(5 / 7); // a week back from the 10th: 5 of 7 done
+    expect(stats.overall.rate).toBe(1);
+    expect(stats.previous.rate).toBe(0);
+    expect(stats.run).toEqual({ current: 5, best: 5 });
+  });
+});
+
+describe("formatRateChange", () => {
+  it("shows whole percentage points with a sign", () => {
+    expect(formatRateChange(0.82, 0.76)).toBe("+6 pts");
+    expect(formatRateChange(0.5, 0.6)).toBe("−10 pts");
+    expect(formatRateChange(0.5, 0.5)).toBe("0 pts");
+  });
+
+  it("is null without something to compare", () => {
+    expect(formatRateChange(null, 0.5)).toBeNull();
+    expect(formatRateChange(0.5, null)).toBeNull();
   });
 });
 

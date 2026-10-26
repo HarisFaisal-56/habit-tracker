@@ -17,7 +17,7 @@ export function WeekProgressBar({ habit, week, label = "This week" }: WeekProgre
   return (
     <div>
       <div className="mb-1 flex justify-between text-sm">
-        <span className="text-stone-500 dark:text-stone-400">{label}</span>
+        <span className="text-muted">{label}</span>
         <span className="font-medium tabular-nums">{text}</span>
       </div>
       {week.target > 0 && (
@@ -28,7 +28,7 @@ export function WeekProgressBar({ habit, week, label = "This week" }: WeekProgre
           aria-valuemax={week.target}
           aria-valuenow={Math.min(week.done, week.target)}
           aria-valuetext={text}
-          className="h-2 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800"
+          className="h-2 overflow-hidden rounded-full bg-ink/10"
         >
           <div
             className={clsx(

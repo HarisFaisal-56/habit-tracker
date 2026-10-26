@@ -1,19 +1,21 @@
-import { useId, useState, type SubmitEvent } from "react";
+import clsx from "clsx";
+import { useId, useState, type ReactNode, type SubmitEvent } from "react";
 import { useToday } from "../../app/useToday";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
-import { HabitIcon } from "../../components/HabitIcon";
-import { IdentityStatement } from "../../components/IdentityStatement";
+import { habitColor } from "../../components/habitColors";
+import { PillSelect } from "../../components/PillSelect";
 import { Screen } from "../../components/Screen";
-import { SegmentedControl } from "../../components/SegmentedControl";
 import { useRepository } from "../../data/RepositoryContext";
 import { useCompletions, useHabits, useWeeklyReviews } from "../../data/useData";
 import { addDays, startOfWeek, type DateKey } from "../../domain/dates";
 import type { WeeklyReview } from "../../domain/habit";
 import { AddHabitLink } from "../habits/AddHabitLink";
-import { WeekProgressBar } from "../stats/WeekProgressBar";
 import {
   formatWeekRange,
+  formatWeekRangeShort,
+  getWeekCheckins,
+  getWeekNumber,
   INTENTION_MAX_LENGTH,
   isReviewDay,
   isReviewEmpty,
@@ -21,14 +23,17 @@ import {
   summarizeWeek,
   trimReview,
   type ReviewFields,
+  type WeekCheckins,
+  type WeekHabitSummary,
 } from "./reviewData";
 
 type WeekChoice = "last" | "this";
 
-const WEEK_OPTIONS: { value: WeekChoice; label: string }[] = [
-  { value: "last", label: "Last week" },
-  { value: "this", label: "This week" },
-];
+function isWeekChoice(value: string): value is WeekChoice {
+  return value === "last" || value === "this";
+}
+
+const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function ReviewScreen() {
   const today = useToday();
@@ -52,57 +57,55 @@ export function ReviewScreen() {
 
   const thisWeek = startOfWeek(today);
   const weekStart = choice === "this" ? thisWeek : addDays(thisWeek, -7);
-  const weekLabel = choice === "this" ? "This week" : "Last week";
   const review = reviews.find((r) => r.weekStart === weekStart);
   const intentionForWeek = reviews.find((r) => r.weekStart === addDays(weekStart, -7))?.intention;
   const summary = summarizeWeek(habits, completions, weekStart, today);
+  const checkins = getWeekCheckins(habits, completions, weekStart, today);
   const pastReviews = reviews.filter((r) => r.weekStart !== weekStart);
 
   return (
-    <Screen title="Weekly review" subtitle={formatWeekRange(weekStart)}>
-      <SegmentedControl label="Week" options={WEEK_OPTIONS} value={choice} onChange={setChoice} />
-
+    <Screen
+      title="Weekly review"
+      subtitle={
+        <>
+          Week {getWeekNumber(weekStart)} ·{" "}
+          {/* Short on screen, as in the designs; spelled out for screen readers. */}
+          <span aria-hidden="true">{formatWeekRangeShort(weekStart)}</span>
+          <span className="sr-only">{formatWeekRange(weekStart)}</span>
+        </>
+      }
+      actions={
+        <PillSelect
+          label="Week"
+          value={choice}
+          onChange={(value) => {
+            if (isWeekChoice(value)) setChoice(value);
+          }}
+        >
+          <option value="this">This week</option>
+          <option value="last">Last week</option>
+        </PillSelect>
+      }
+      glow="rose"
+    >
       {choice === "this" && isReviewDay(today) && !review && (
-        <p className="rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+        <p className="rounded-3xl border border-accent/30 bg-accent/10 p-4 text-sm">
           It’s Sunday, a good moment to look back on your week. It only takes two minutes.
         </p>
       )}
 
       {intentionForWeek && (
-        <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-stone-900">
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            Your intention for {choice === "this" ? "this" : "that"} week
+        <div className="rounded-3xl border border-accent/30 bg-linear-to-br from-accent/14 to-accent/2 p-5">
+          <p className="section-label text-accent-text">
+            {choice === "this" ? "Last week you promised" : "The week before you promised"}
           </p>
-          <p className="font-medium">“{intentionForWeek}”</p>
+          <p className="mt-2.5 text-lg leading-snug">“{intentionForWeek}”</p>
         </div>
       )}
 
-      <section aria-labelledby="week-summary-heading" className="flex flex-col gap-2">
-        <h2 id="week-summary-heading" className="text-lg font-semibold">
-          How the week went
-        </h2>
-        {summary.length === 0 ? (
-          <p className="text-sm text-stone-500 dark:text-stone-400">No habits that week.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {summary.map(({ habit, progress }) => (
-              <li
-                key={habit.id}
-                className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm dark:bg-stone-900"
-              >
-                <div className="flex items-center gap-3">
-                  <HabitIcon emoji={habit.emoji} color={habit.color} />
-                  <div className="min-w-0">
-                    <h3 className="truncate font-medium">{habit.name}</h3>
-                    <IdentityStatement identity={habit.identity} />
-                  </div>
-                </div>
-                <WeekProgressBar habit={habit} week={progress} label={weekLabel} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {checkins.expected > 0 && <CheckinsCard checkins={checkins} today={today} />}
+
+      <IdentityVotes summary={summary} />
 
       {/* Keyed by week so switching weeks starts from that week's saved review. */}
       <ReviewForm key={weekStart} weekStart={weekStart} review={review} />
@@ -112,8 +115,77 @@ export function ReviewScreen() {
   );
 }
 
+/** Bar height for a day: a stub when nothing was done, the full height when everything was. */
+function barHeight(done: number, expected: number): string {
+  if (expected === 0) return "40%";
+  return `${String(40 + 60 * Math.min(1, done / expected))}%`;
+}
+
+function barTone(done: number, expected: number): string {
+  if (expected === 0) return "bg-ink/8";
+  if (done >= expected) return "bg-accent";
+  if (done === 0) return "bg-ink/10";
+  return done / expected >= 0.5 ? "bg-accent-mark/70" : "bg-accent-mark/55";
+}
+
+function CheckinsCard({ checkins, today }: { checkins: WeekCheckins; today: DateKey }) {
+  return (
+    <section
+      aria-label="Check-ins"
+      className="flex items-center gap-4 rounded-3xl border border-line bg-surface p-4"
+    >
+      <div className="shrink-0">
+        <p className="text-4xl font-light tabular-nums">
+          {checkins.done}
+          <span className="text-xl text-muted">/{checkins.expected}</span>
+        </p>
+        <p className="section-label mt-2">Check-ins</p>
+      </div>
+      <div aria-hidden="true" className="flex flex-1 items-end justify-between gap-1">
+        {checkins.days.map(({ date, done, expected }, index) => (
+          <div key={date} className="flex flex-col items-center gap-2">
+            <div className="flex h-9 items-end">
+              <div
+                className={clsx(
+                  "w-4 rounded-lg",
+                  date > today ? "bg-ink/8" : barTone(done, expected),
+                )}
+                style={{ height: barHeight(done, expected) }}
+              />
+            </div>
+            <span className="label text-2xs">{DAY_LETTERS[index]}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Each identity statement, with a "vote" for every day it was acted on this week. */
+function IdentityVotes({ summary }: { summary: readonly WeekHabitSummary[] }) {
+  const withIdentity = summary.filter(({ habit }) => habit.identity);
+  if (withIdentity.length === 0) return null;
+  return (
+    <section aria-label="Identity votes">
+      <ul className="grid grid-cols-3 gap-2.5">
+        {withIdentity.map(({ habit, progress }) => (
+          <li
+            key={habit.id}
+            className="flex flex-col justify-between gap-2 rounded-3xl border border-line bg-surface p-3.5"
+          >
+            <p className="text-sm leading-snug">{habit.identity}</p>
+            <p className={clsx("font-mono text-eyebrow", habitColor(habit.color).accent)}>
+              {progress.done} {progress.done === 1 ? "vote" : "votes"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 const fieldClass =
-  "w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-base text-stone-900 placeholder:text-stone-400 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100";
+  "w-full resize-none bg-transparent text-base leading-snug text-soft placeholder:text-muted focus:outline-none";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -125,7 +197,6 @@ function ReviewForm({ weekStart, review }: { weekStart: DateKey; review?: Weekly
     intention: review?.intention ?? "",
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
-  const headingId = useId();
   const winsId = useId();
   const strugglesId = useId();
   const intentionId = useId();
@@ -137,6 +208,7 @@ function ReviewForm({ weekStart, review }: { weekStart: DateKey; review?: Weekly
     trimmed.struggles === review.struggles &&
     trimmed.intention === review.intention;
   const canSave = !isReviewEmpty(fields) && !unchanged && status !== "saving";
+  const nextWeek = getWeekNumber(addDays(weekStart, 7));
 
   const update = (changes: Partial<ReviewFields>) => {
     setFields((current) => ({ ...current, ...changes }));
@@ -160,51 +232,39 @@ function ReviewForm({ weekStart, review }: { weekStart: DateKey; review?: Weekly
 
   return (
     <form
-      aria-labelledby={headingId}
+      aria-label="Your reflection"
       onSubmit={(event) => {
         void handleSubmit(event);
       }}
-      className="flex flex-col gap-4 rounded-3xl bg-white p-4 shadow-sm dark:bg-stone-900"
+      className="flex flex-col gap-3"
     >
-      <h2 id={headingId} className="text-lg font-semibold">
-        Your reflection
-      </h2>
-      <div>
-        <label htmlFor={winsId} className="mb-1 block text-sm font-medium">
-          Wins
-        </label>
+      <FieldCard htmlFor={winsId} label="Wins">
         <textarea
           id={winsId}
           value={fields.wins}
           onChange={(event) => {
             update({ wins: event.target.value });
           }}
-          rows={3}
+          rows={2}
           maxLength={REVIEW_TEXT_MAX_LENGTH}
           placeholder="What went well? Small wins count."
           className={fieldClass}
         />
-      </div>
-      <div>
-        <label htmlFor={strugglesId} className="mb-1 block text-sm font-medium">
-          Struggles
-        </label>
+      </FieldCard>
+      <FieldCard htmlFor={strugglesId} label="Friction">
         <textarea
           id={strugglesId}
           value={fields.struggles}
           onChange={(event) => {
             update({ struggles: event.target.value });
           }}
-          rows={3}
+          rows={2}
           maxLength={REVIEW_TEXT_MAX_LENGTH}
           placeholder="What got in the way? No judgement."
           className={fieldClass}
         />
-      </div>
-      <div>
-        <label htmlFor={intentionId} className="mb-1 block text-sm font-medium">
-          One intention for next week
-        </label>
+      </FieldCard>
+      <FieldCard htmlFor={intentionId} label="Next week, I will">
         <input
           id={intentionId}
           value={fields.intention}
@@ -214,50 +274,71 @@ function ReviewForm({ weekStart, review }: { weekStart: DateKey; review?: Weekly
           maxLength={INTENTION_MAX_LENGTH}
           autoComplete="off"
           placeholder="e.g. Lay out my running shoes the night before"
-          className={`${fieldClass} min-h-11`}
+          className={clsx(fieldClass, "min-h-6")}
         />
-      </div>
+      </FieldCard>
 
-      <div className="flex items-center justify-end gap-3">
-        <p role="status" className="text-sm text-stone-500 dark:text-stone-400">
-          {status === "saved" && "Saved."}
-          {status === "error" && (
-            <span className="text-rose-700 dark:text-rose-400">
-              Couldn’t save. Please try again.
-            </span>
-          )}
-        </p>
-        <Button type="submit" disabled={!canSave}>
-          {review ? "Update review" : "Save review"}
-        </Button>
-      </div>
+      <p role="status" className="min-h-5 text-center text-sm text-muted">
+        {status === "saved" && "Saved."}
+        {status === "error" && (
+          <span className="text-danger">Couldn’t save. Please try again.</span>
+        )}
+      </p>
+      {/* Once there is something to save, pinned to the bottom while the form scrolls. */}
+      <Button
+        type="submit"
+        variant="cta"
+        disabled={!canSave}
+        className={clsx(canSave && "sticky bottom-3")}
+      >
+        {review ? `Update week ${String(nextWeek)}` : `Lock in week ${String(nextWeek)}`}
+      </Button>
     </form>
+  );
+}
+
+function FieldCard({
+  htmlFor,
+  label,
+  children,
+}: {
+  htmlFor: string;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-3xl border border-line bg-surface px-4 py-3.5 focus-within:border-ink/30">
+      <label htmlFor={htmlFor} className="section-label text-soft">
+        {label}
+      </label>
+      {children}
+    </div>
   );
 }
 
 const PAST_FIELDS: { key: keyof ReviewFields; label: string }[] = [
   { key: "wins", label: "Wins" },
-  { key: "struggles", label: "Struggles" },
-  { key: "intention", label: "Intention" },
+  { key: "struggles", label: "Friction" },
+  { key: "intention", label: "Next week, I will" },
 ];
 
 function PastReviews({ reviews }: { reviews: readonly WeeklyReview[] }) {
   return (
-    <section aria-labelledby="past-reviews-heading" className="flex flex-col gap-2">
-      <h2 id="past-reviews-heading" className="text-lg font-semibold">
+    <section aria-labelledby="past-reviews-heading" className="flex flex-col gap-3">
+      <h2 id="past-reviews-heading" className="section-label px-1">
         Past reviews
       </h2>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {reviews.map((review) => (
-          <li key={review.id} className="rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+          <li key={review.id} className="rounded-3xl border border-line bg-surface">
             <details>
-              <summary className="flex min-h-11 cursor-pointer items-center rounded-2xl px-4 py-3 font-medium">
+              <summary className="flex min-h-11 cursor-pointer items-center rounded-3xl px-4 py-3 font-medium">
                 {formatWeekRange(review.weekStart)}
               </summary>
               <dl className="flex flex-col gap-3 px-4 pb-4">
                 {PAST_FIELDS.filter(({ key }) => review[key] !== "").map(({ key, label }) => (
                   <div key={key}>
-                    <dt className="text-sm text-stone-500 dark:text-stone-400">{label}</dt>
+                    <dt className="label">{label}</dt>
                     <dd className="whitespace-pre-line">{review[key]}</dd>
                   </div>
                 ))}

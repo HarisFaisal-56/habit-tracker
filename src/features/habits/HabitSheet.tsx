@@ -38,10 +38,7 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
   }
 
   return (
-    <section
-      aria-label="Manage habit"
-      className="flex flex-col gap-2 border-t border-stone-200 pt-4 dark:border-stone-800"
-    >
+    <section aria-label="Manage habit" className="flex flex-col gap-2 border-t border-line pt-4">
       {habit.archived ? (
         <>
           <Button
@@ -96,13 +93,13 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
           >
             Archive habit
           </Button>
-          <p className="text-center text-sm text-stone-500 dark:text-stone-400">
+          <p className="text-center text-sm text-muted">
             Hides it from Today. Its history is kept and you can restore it any time.
           </p>
         </>
       )}
       {error && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

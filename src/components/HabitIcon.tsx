@@ -11,7 +11,7 @@ export function HabitIcon({ emoji, color }: HabitIconProps) {
   return (
     <span
       className={clsx(
-        "flex size-11 shrink-0 items-center justify-center rounded-full text-xl",
+        "flex size-10 shrink-0 items-center justify-center rounded-xl text-xl",
         habitColor(color).soft,
       )}
     >

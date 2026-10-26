@@ -1,4 +1,20 @@
+import clsx from "clsx";
 import { useId } from "react";
+
+const VARIANTS = {
+  /** Full width, a raised grey segment for the choice, e.g. forms and the theme setting. */
+  neutral: {
+    group: "grid auto-cols-fr grid-flow-col rounded-2xl bg-raised",
+    option:
+      "touch-target h-9.5 rounded-xl px-1 text-base peer-checked:bg-ink/15 peer-checked:font-medium peer-checked:text-ink",
+  },
+  /** Compact, a lime segment and mono labels, e.g. the Stats time range. */
+  accent: {
+    group: "inline-grid grid-flow-col rounded-2xl border border-line-strong bg-ink/8",
+    option:
+      "touch-target h-9 min-w-11 rounded-xl px-2.5 font-mono text-sm peer-checked:bg-accent peer-checked:text-accent-ink",
+  },
+} as const;
 
 type SegmentedControlProps<T extends string | number> = {
   /** Accessible name for the group. */
@@ -6,6 +22,7 @@ type SegmentedControlProps<T extends string | number> = {
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  variant?: keyof typeof VARIANTS;
 };
 
 /** A row of mutually exclusive options, built on native radios (arrow keys move between them). */
@@ -14,14 +31,12 @@ export function SegmentedControl<T extends string | number>({
   options,
   value,
   onChange,
+  variant = "neutral",
 }: SegmentedControlProps<T>) {
   const name = useId();
+  const styles = VARIANTS[variant];
   return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className="grid auto-cols-fr grid-flow-col gap-1 rounded-xl bg-stone-100 p-1 dark:bg-stone-800"
-    >
+    <div role="radiogroup" aria-label={label} className={clsx("gap-1 p-1", styles.group)}>
       {options.map((option) => (
         <label key={option.value}>
           <input
@@ -34,7 +49,12 @@ export function SegmentedControl<T extends string | number>({
             }}
             className="peer sr-only"
           />
-          <span className="flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-1 text-center text-sm font-medium text-stone-600 peer-checked:bg-white peer-checked:text-stone-900 peer-checked:shadow-sm peer-focus-visible:outline-2 peer-focus-visible:outline-emerald-600 dark:text-stone-300 dark:peer-checked:bg-stone-950 dark:peer-checked:text-stone-100">
+          <span
+            className={clsx(
+              "flex cursor-pointer items-center justify-center text-center text-muted peer-focus-visible:outline-2 peer-focus-visible:outline-accent-text motion-safe:transition-colors",
+              styles.option,
+            )}
+          >
             {option.label}
           </span>
         </label>

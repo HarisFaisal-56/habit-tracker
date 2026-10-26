@@ -7,7 +7,7 @@ import {
 import { addDays, eachDay, maxDateKey, type DateKey } from "./dates";
 import type { Completion, Habit } from "./habit";
 import { isDueOn } from "./schedule";
-import { getDayStatus } from "./streaks";
+import { getDayStatus, getStreak } from "./streaks";
 
 /** The rolling windows shown on the Stats screen, in days. */
 export const COMPLETION_RATE_WINDOWS = [7, 30, 90] as const;
@@ -89,9 +89,64 @@ export function getOverallCompletionRate(
   return toRate(done, expected);
 }
 
+/**
+ * The longest current streak, in days, among active habits: the "day run" shown
+ * on Today. Weekly goals count in weeks, so they're left out.
+ */
+export function getLongestCurrentRun(
+  habits: readonly Habit[],
+  completions: readonly Completion[],
+  today: DateKey,
+): number {
+  const byHabit = indexCompletionsByHabit(completions);
+  let longest = 0;
+  for (const habit of habits) {
+    if (habit.archived) continue;
+    const streak = getStreak(habit, byHabit.get(habit.id) ?? NO_COMPLETIONS, today);
+    if (streak.unit === "days") longest = Math.max(longest, streak.current);
+  }
+  return longest;
+}
+
+/** The best day streak any of the given habits has reached. Weekly goals count in weeks, so they're left out. */
+export function getBestRun(
+  habits: readonly Habit[],
+  completions: readonly Completion[],
+  today: DateKey,
+): number {
+  const byHabit = indexCompletionsByHabit(completions);
+  let best = 0;
+  for (const habit of habits) {
+    const streak = getStreak(habit, byHabit.get(habit.id) ?? NO_COMPLETIONS, today);
+    if (streak.unit === "days") best = Math.max(best, streak.best);
+  }
+  return best;
+}
+
+/** Days averaged into each point of the completion trend. */
+const TREND_SMOOTHING_DAYS = 7;
+
+/**
+ * The overall completion rate for each of the last `days` days, oldest first. Each
+ * point averages the week ending that day, so a single bad day doesn't spike the line.
+ * A point is null when nothing was expected in its week.
+ */
+export function getCompletionTrend(
+  habits: readonly Habit[],
+  completions: readonly Completion[],
+  today: DateKey,
+  days: number,
+): (number | null)[] {
+  return eachDay(addDays(today, 1 - days), today).map(
+    (date) => getOverallCompletionRate(habits, completions, date, TREND_SMOOTHING_DAYS).rate,
+  );
+}
+
 export type TodayProgress = {
-  /** Due habits done (full or minimum) today. */
-  done: number;
+  /** Due habits fully done today: the ring's "closed" count. */
+  closed: number;
+  /** Due habits done at their minimum version today. Counts for streaks, but isn't closed. */
+  minimum: number;
   /** Habits due today, not counting ones skipped today. */
   due: number;
 };
@@ -103,14 +158,16 @@ export function getTodayProgress(
   today: DateKey,
 ): TodayProgress {
   const byHabit = indexCompletionsByHabit(completions);
-  let done = 0;
+  let closed = 0;
+  let minimum = 0;
   let due = 0;
   for (const habit of habits) {
     const byDate = byHabit.get(habit.id) ?? NO_COMPLETIONS;
     const completion = byDate.get(today);
     if (completion?.kind === "skipped" || !isDueOn(habit, byDate, today)) continue;
     due += 1;
-    if (isDone(completion)) done += 1;
+    if (completion?.kind === "full") closed += 1;
+    else if (completion?.kind === "minimum") minimum += 1;
   }
-  return { done, due };
+  return { closed, minimum, due };
 }

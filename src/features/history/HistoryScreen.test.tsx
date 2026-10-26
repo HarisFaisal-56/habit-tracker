@@ -97,11 +97,10 @@ describe("HistoryScreen", () => {
     await user.click(day(/^Tuesday 7 January/));
 
     const details = screen.getByRole("region", { name: "Tuesday 7 January" });
-    const items = within(details).getAllByRole("listitem");
-    expect(items.map((item) => item.textContent)).toEqual([
-      expect.stringContaining("ReadDone“Great chapter”"),
-      expect.stringContaining("RunMissed"),
-    ]);
+    expect(within(details).getByText("1 of 2 closed")).toBeInTheDocument();
+    expect(within(details).getByRole("button", { name: "Read, Done" })).toBeInTheDocument();
+    expect(within(details).getByRole("button", { name: "Run, Missed" })).toBeInTheDocument();
+    expect(within(details).getByText("“Great chapter”")).toBeInTheDocument();
   });
 
   it("shows one habit's statuses and heatmap when picked", async () => {
@@ -114,7 +113,9 @@ describe("HistoryScreen", () => {
     await seed(repository, running, "2025-01-01");
     const { user } = renderApp("/history", repository);
 
-    expect(await screen.findAllByRole("img", { name: /last 12 months/ })).toHaveLength(2);
+    // All habits together at first.
+    expect(await screen.findAllByRole("img", { name: /last 12 months/ })).toHaveLength(1);
+    expect(screen.getByRole("img", { name: /^All habits, last 12 months/ })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText("Habit"), read.id);
 
@@ -166,7 +167,9 @@ describe("HistoryScreen", () => {
       await waitFor(() => {
         expect(screen.queryByRole("dialog", { name: /Read/ })).not.toBeInTheDocument();
       });
-      expect(await within(details).findByText("Done")).toBeInTheDocument();
+      expect(
+        await within(details).findByRole("button", { name: "Read, Done" }),
+      ).toBeInTheDocument();
       expect(day(/^Tuesday 7 January, 1 of 1 done/)).toBeInTheDocument();
       expect(await repository.listCompletions()).toMatchObject([
         { date: "2025-01-07", kind: "full" },
@@ -184,7 +187,9 @@ describe("HistoryScreen", () => {
       const sheet = screen.getByRole("dialog", { name: /Read/ });
       await user.click(within(sheet).getByRole("button", { name: "Clear this day" }));
 
-      expect(await within(details).findByText("Missed")).toBeInTheDocument();
+      expect(
+        await within(details).findByRole("button", { name: "Read, Missed" }),
+      ).toBeInTheDocument();
       expect(await repository.listCompletions()).toEqual([]);
     });
 

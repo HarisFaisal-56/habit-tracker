@@ -98,18 +98,16 @@ function LogOptions({
               aria-pressed={current}
               onClick={() => void log(kind)}
               className={clsx(
-                "flex min-h-14 items-center gap-3 rounded-2xl border-2 p-3 text-left motion-safe:transition-colors",
+                "flex min-h-14 items-center gap-3 rounded-2xl border p-3 text-left motion-safe:transition-colors",
                 current
-                  ? "border-emerald-600 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950"
-                  : "border-stone-200 hover:bg-stone-50 active:bg-stone-100 dark:border-stone-800 dark:hover:bg-stone-800 dark:active:bg-stone-800",
+                  ? "border-accent-text bg-accent/10"
+                  : "border-line hover:bg-raised active:bg-raised",
               )}
             >
               <CompletionMark kind={kind} color={habit.color} />
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{label}</span>
-                <span className="block text-sm text-stone-500 dark:text-stone-400">
-                  {description}
-                </span>
+                <span className="block text-sm text-muted">{description}</span>
               </span>
             </button>
           );
@@ -118,7 +116,7 @@ function LogOptions({
 
       <div>
         <label htmlFor={noteId} className="mb-1 block text-sm font-medium">
-          Note <span className="font-normal text-stone-500">(optional)</span>
+          Note <span className="font-normal text-muted">(optional)</span>
         </label>
         <textarea
           id={noteId}
@@ -129,17 +127,15 @@ function LogOptions({
           rows={2}
           maxLength={NOTE_MAX_LENGTH}
           placeholder="How did it go?"
-          className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-base text-stone-900 placeholder:text-stone-400 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100"
+          className="w-full rounded-xl border border-line bg-canvas px-3 py-2 text-base text-ink placeholder:text-muted"
         />
         {!completion && (
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Saved when you choose an option above.
-          </p>
+          <p className="mt-1 text-sm text-muted">Saved when you choose an option above.</p>
         )}
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

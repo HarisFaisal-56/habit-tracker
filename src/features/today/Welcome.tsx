@@ -54,13 +54,13 @@ export function Welcome() {
   return (
     <section
       aria-labelledby="welcome-heading"
-      className="flex flex-col gap-5 rounded-3xl bg-white p-5 shadow-sm dark:bg-stone-900"
+      className="flex flex-col gap-5 rounded-3xl border border-line bg-surface p-5"
     >
       <div>
         <h2 id="welcome-heading" className="text-xl font-semibold">
           Welcome
         </h2>
-        <p className="text-stone-500 dark:text-stone-400">
+        <p className="text-muted">
           A calm habit tracker that forgives bad days. Everything stays on this device.
         </p>
       </div>
@@ -68,13 +68,10 @@ export function Welcome() {
       <ul className="flex flex-col gap-3">
         {PRINCIPLES.map(({ icon: Icon, title, text }) => (
           <li key={title} className="flex gap-3">
-            <Icon
-              aria-hidden="true"
-              className="mt-0.5 size-5 shrink-0 text-emerald-700 dark:text-emerald-400"
-            />
+            <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-accent-text" />
             <p>
               <span className="font-medium">{title}.</span>{" "}
-              <span className="text-stone-600 dark:text-stone-300">{text}</span>
+              <span className="text-muted">{text}</span>
             </p>
           </li>
         ))}
@@ -98,16 +95,14 @@ export function Welcome() {
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{habit.name}</span>
-                  <span className="block truncate text-xs text-stone-600 dark:text-stone-300">
-                    {describeSchedule(habit.schedule)}
-                  </span>
+                  <span className="label block truncate">{describeSchedule(habit.schedule)}</span>
                 </span>
               </button>
             </li>
           ))}
         </ul>
         {error && (
-          <p role="alert" className="text-sm text-rose-700 dark:text-rose-400">
+          <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}

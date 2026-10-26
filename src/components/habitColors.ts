@@ -2,63 +2,74 @@
 export type HabitColorStyle = {
   /** Name for screen readers. */
   label: string;
-  /** Solid fill, e.g. for colour swatches. */
+  /** Solid fill, e.g. for colour swatches and dots. */
   swatch: string;
   /** Light tint behind a habit's emoji. */
   soft: string;
   /** Text colour; SVG marks draw with `currentColor`. */
   accent: string;
+  /** The colour itself, for SVG strokes and inline styles. */
+  value: string;
 };
 
-// Full class names (not built from strings) so Tailwind can find them.
+// Full class names (not built from strings) so Tailwind can find them. The
+// colours live in src/index.css and differ between light and dark.
 export const HABIT_COLORS = {
   emerald: {
     label: "Green",
-    swatch: "bg-emerald-600",
-    soft: "bg-emerald-100 dark:bg-emerald-950",
-    accent: "text-emerald-600 dark:text-emerald-500",
+    swatch: "bg-habit-emerald",
+    soft: "bg-habit-emerald/15",
+    accent: "text-habit-emerald",
+    value: "var(--color-habit-emerald)",
   },
   teal: {
-    label: "Teal",
-    swatch: "bg-teal-600",
-    soft: "bg-teal-100 dark:bg-teal-950",
-    accent: "text-teal-600 dark:text-teal-500",
+    label: "Mint",
+    swatch: "bg-habit-teal",
+    soft: "bg-habit-teal/15",
+    accent: "text-habit-teal",
+    value: "var(--color-habit-teal)",
   },
   sky: {
     label: "Blue",
-    swatch: "bg-sky-600",
-    soft: "bg-sky-100 dark:bg-sky-950",
-    accent: "text-sky-600 dark:text-sky-500",
+    swatch: "bg-habit-sky",
+    soft: "bg-habit-sky/15",
+    accent: "text-habit-sky",
+    value: "var(--color-habit-sky)",
   },
   indigo: {
     label: "Indigo",
-    swatch: "bg-indigo-600",
-    soft: "bg-indigo-100 dark:bg-indigo-950",
-    accent: "text-indigo-600 dark:text-indigo-400",
+    swatch: "bg-habit-indigo",
+    soft: "bg-habit-indigo/15",
+    accent: "text-habit-indigo",
+    value: "var(--color-habit-indigo)",
   },
   violet: {
     label: "Purple",
-    swatch: "bg-violet-600",
-    soft: "bg-violet-100 dark:bg-violet-950",
-    accent: "text-violet-600 dark:text-violet-400",
+    swatch: "bg-habit-violet",
+    soft: "bg-habit-violet/15",
+    accent: "text-habit-violet",
+    value: "var(--color-habit-violet)",
   },
   rose: {
     label: "Pink",
-    swatch: "bg-rose-600",
-    soft: "bg-rose-100 dark:bg-rose-950",
-    accent: "text-rose-600 dark:text-rose-500",
+    swatch: "bg-habit-rose",
+    soft: "bg-habit-rose/15",
+    accent: "text-habit-rose",
+    value: "var(--color-habit-rose)",
   },
   orange: {
     label: "Orange",
-    swatch: "bg-orange-600",
-    soft: "bg-orange-100 dark:bg-orange-950",
-    accent: "text-orange-600 dark:text-orange-500",
+    swatch: "bg-habit-orange",
+    soft: "bg-habit-orange/15",
+    accent: "text-habit-orange",
+    value: "var(--color-habit-orange)",
   },
   amber: {
     label: "Yellow",
-    swatch: "bg-amber-500",
-    soft: "bg-amber-100 dark:bg-amber-950",
-    accent: "text-amber-600 dark:text-amber-500",
+    swatch: "bg-habit-amber",
+    soft: "bg-habit-amber/15",
+    accent: "text-habit-amber",
+    value: "var(--color-habit-amber)",
   },
 } as const satisfies Record<string, HabitColorStyle>;
 

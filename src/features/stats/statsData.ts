@@ -1,9 +1,12 @@
 import { indexCompletionsByHabit, NO_COMPLETIONS } from "../../domain/completions";
-import type { DateKey } from "../../domain/dates";
+import { addDays, type DateKey } from "../../domain/dates";
 import type { Completion, Habit, Schedule } from "../../domain/habit";
 import { getWeekProgress, type WeekProgress } from "../../domain/schedule";
 import {
+  getBestRun,
   getCompletionRate,
+  getCompletionTrend,
+  getLongestCurrentRun,
   getOverallCompletionRate,
   type CompletionRate,
 } from "../../domain/stats";
@@ -20,6 +23,12 @@ export type HabitStats = {
 export type StatsOverview = {
   /** Across active habits. */
   overall: CompletionRate;
+  /** The window just before the current one, for comparing. */
+  previous: CompletionRate;
+  /** Overall rate per day over the window, oldest first. See `getCompletionTrend`. */
+  trend: (number | null)[];
+  /** Longest current and best day streaks among active habits. */
+  run: { current: number; best: number };
   /** Every habit given, in the same order. */
   habits: HabitStats[];
 };
@@ -33,6 +42,21 @@ export function buildStats(
   const byHabit = indexCompletionsByHabit(completions);
   return {
     overall: getOverallCompletionRate(habits, completions, today, windowDays),
+    previous: getOverallCompletionRate(
+      habits,
+      completions,
+      addDays(today, -windowDays),
+      windowDays,
+    ),
+    trend: getCompletionTrend(habits, completions, today, windowDays),
+    run: {
+      current: getLongestCurrentRun(habits, completions, today),
+      best: getBestRun(
+        habits.filter((habit) => !habit.archived),
+        completions,
+        today,
+      ),
+    },
     habits: habits.map((habit) => {
       const byDate = byHabit.get(habit.id) ?? NO_COMPLETIONS;
       return {
@@ -61,4 +85,12 @@ export function formatWeekProgress(week: WeekProgress, schedule: Schedule): stri
   const isWeekly = schedule.type === "weekly";
   if (week.target === 0) return isWeekly ? "Excused this week" : "Nothing due this week";
   return `${String(week.done)} of ${String(week.target)} ${isWeekly ? "times" : "days"}`;
+}
+
+/** "+6 pts" or "-3 pts" between two rates, or null when either is missing. */
+export function formatRateChange(current: number | null, previous: number | null): string | null {
+  if (current === null || previous === null) return null;
+  const points = Math.round(current * 100) - Math.round(previous * 100);
+  const sign = points > 0 ? "+" : points < 0 ? "−" : "";
+  return `${sign}${String(Math.abs(points))} pts`;
 }

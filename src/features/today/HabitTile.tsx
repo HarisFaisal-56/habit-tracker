@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { Ellipsis } from "lucide-react";
 import { IconButton } from "../../components/Button";
 import { CompletionMark } from "../../components/CompletionMark";
-import { HabitIcon } from "../../components/HabitIcon";
+import { habitColor } from "../../components/habitColors";
 import { useLongPress } from "../../components/useLongPress";
 import { isDone } from "../../domain/completions";
 import type { CompletionKind } from "../../domain/habit";
@@ -16,9 +16,9 @@ const STATUS_TEXT: Record<CompletionKind | "none", string> = {
 };
 
 const TONE_CLASS: Record<ItemSummary["tone"], string> = {
-  normal: "text-stone-500 dark:text-stone-400",
-  warning: "text-amber-700 dark:text-amber-400",
-  success: "text-emerald-700 dark:text-emerald-400",
+  normal: "text-muted",
+  warning: "text-habit-amber",
+  success: "text-accent-text",
 };
 
 type HabitTileProps = {
@@ -33,31 +33,31 @@ export function HabitTile({ item, onToggle, onOpenOptions }: HabitTileProps) {
   const { habit, completion } = item;
   const longPress = useLongPress(onOpenOptions);
   const summary = summarizeItem(item);
+  const { accent } = habitColor(habit.color);
+  const minimum =
+    completion?.kind === "minimum" && habit.minimumVersion ? ` · Min ${habit.minimumVersion}` : "";
 
   return (
-    <li className="flex items-center rounded-2xl bg-white shadow-sm dark:bg-stone-900">
+    <li className="flex items-center rounded-2xl border border-line bg-surface">
       <button
         type="button"
         aria-pressed={isDone(completion)}
         onClick={onToggle}
         {...longPress}
-        className="flex min-h-16 min-w-0 flex-1 touch-manipulation items-center gap-3 rounded-2xl p-3 text-left select-none touch-callout-none"
+        className="flex min-h-12 min-w-0 flex-1 touch-manipulation items-center gap-3.5 rounded-2xl py-2 pr-3.5 pl-4 text-left select-none touch-callout-none"
       >
-        <HabitIcon emoji={habit.emoji} color={habit.color} />
+        <span
+          aria-hidden="true"
+          className={clsx("glow-current size-2 shrink-0 rounded-full bg-current", accent)}
+        />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium">{habit.name}</span>
-          {summary && (
-            <span className={clsx("block truncate text-sm", TONE_CLASS[summary.tone])}>
-              {summary.text}
-            </span>
-          )}
-          {completion?.kind === "minimum" && habit.minimumVersion && (
-            <span className="block truncate text-sm text-stone-500 dark:text-stone-400">
-              Minimum: {habit.minimumVersion}
-            </span>
-          )}
+          <span className="block truncate text-base leading-tight font-medium">{habit.name}</span>
+          <span className={clsx("label mt-0.5 block truncate", TONE_CLASS[summary.tone])}>
+            {summary.text}
+            {minimum}
+          </span>
           {completion?.note && (
-            <span className="block truncate text-sm text-stone-500 italic dark:text-stone-400">
+            <span className="mt-1 block truncate text-sm text-muted italic">
               “{completion.note}”
             </span>
           )}
@@ -65,11 +65,12 @@ export function HabitTile({ item, onToggle, onOpenOptions }: HabitTileProps) {
         </span>
         <CompletionMark kind={completion?.kind} color={habit.color} />
       </button>
+      {/* Touch uses a long press and mouse a right-click; this is for keyboards and screen readers. */}
       <IconButton
         label={`More options for ${habit.name}`}
         icon={Ellipsis}
         onClick={onOpenOptions}
-        className="mr-1"
+        className="sr-only focus-visible:not-sr-only focus-visible:mr-1.5 focus-visible:size-11"
       />
     </li>
   );

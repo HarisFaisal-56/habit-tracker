@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { makeCompletions, makeHabit, on } from "../../test/factories";
 import {
   formatWeekRange,
+  formatWeekRangeShort,
+  getWeekCheckins,
+  getWeekNumber,
   isReviewDay,
   isReviewEmpty,
   summarizeWeek,
@@ -24,6 +27,16 @@ describe("formatWeekRange", () => {
     ["2024-02-26", "26 February – 3 March 2024"], // leap year
   ])("formats the week of %s as %s", (weekStart, expected) => {
     expect(formatWeekRange(weekStart)).toBe(expected);
+  });
+});
+
+describe("formatWeekRangeShort", () => {
+  it.each([
+    ["2025-01-06", "6–12 Jan"],
+    ["2025-01-27", "27 Jan – 2 Feb"],
+    ["2024-12-30", "30 Dec – 5 Jan"],
+  ])("formats the week of %s as %s", (weekStart, expected) => {
+    expect(formatWeekRangeShort(weekStart)).toBe(expected);
   });
 });
 
@@ -81,5 +94,44 @@ describe("trimReview / isReviewEmpty", () => {
   it("treats whitespace-only reviews as empty", () => {
     expect(isReviewEmpty({ wins: " ", struggles: "\n\t", intention: "" })).toBe(true);
     expect(isReviewEmpty({ wins: "", struggles: "", intention: "Walk daily" })).toBe(false);
+  });
+});
+
+describe("getWeekNumber", () => {
+  it("is the ISO week, including across the year end", () => {
+    expect(getWeekNumber("2026-10-19")).toBe(43);
+    expect(getWeekNumber("2024-12-30")).toBe(1); // belongs to week 1 of 2025
+    expect(getWeekNumber("2025-01-06")).toBe(2);
+  });
+});
+
+describe("getWeekCheckins", () => {
+  it("counts check-ins per day up to today", () => {
+    const habits = [makeHabit({ id: "a" }), makeHabit({ id: "b" })];
+    const completions = [
+      ...makeCompletions("a", on("full", "2025-01-06", "2025-01-07", "2025-01-08")),
+      ...makeCompletions("b", on("minimum", "2025-01-06")),
+    ];
+
+    const week = getWeekCheckins(habits, completions, "2025-01-06", "2025-01-08");
+
+    expect(week.days.map((day) => [day.done, day.expected])).toEqual([
+      [2, 2],
+      [1, 2],
+      [1, 2], // Wednesday is today: b is still to do
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
+    ]);
+    expect(week).toMatchObject({ done: 4, expected: 6 });
+  });
+
+  it("leaves archived habits out", () => {
+    const habits = [makeHabit({ id: "a", archived: true })];
+    expect(getWeekCheckins(habits, [], "2025-01-06", "2025-01-08")).toMatchObject({
+      done: 0,
+      expected: 0,
+    });
   });
 });

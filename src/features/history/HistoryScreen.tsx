@@ -1,13 +1,12 @@
+import clsx from "clsx";
 import { format } from "date-fns";
-import { ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useToday } from "../../app/useToday";
-import { CompletionMark } from "../../components/CompletionMark";
 import { dayStatusText } from "../../components/dayStatusText";
 import { EmptyState } from "../../components/EmptyState";
-import { HabitIcon } from "../../components/HabitIcon";
-import { Heatmap, HeatmapLegend } from "../../components/Heatmap";
-import { ProgressRing } from "../../components/ProgressRing";
+import { habitColor } from "../../components/habitColors";
+import { Heatmap } from "../../components/Heatmap";
+import { PillSelect } from "../../components/PillSelect";
 import { Screen } from "../../components/Screen";
 import { useCompletions, useHabits } from "../../data/useData";
 import {
@@ -25,10 +24,19 @@ import {
   type DateKey,
 } from "../../domain/dates";
 import type { Habit } from "../../domain/habit";
-import { getDayStatus, type DayStatus } from "../../domain/streaks";
+import { getBestRun } from "../../domain/stats";
+import { getDayStatus } from "../../domain/streaks";
 import { AddHabitLink } from "../habits/AddHabitLink";
 import { LogSheet } from "../today/LogSheet";
-import { buildHeatmap, getDayEntries, summarizeDay, type DayEntry } from "./historyData";
+import {
+  buildHeatmap,
+  buildYearHeatmap,
+  countLoggedDays,
+  getDayEntries,
+  summarizeDay,
+  summarizeMonth,
+  type DayEntry,
+} from "./historyData";
 import { MonthCalendar, type CalendarDay } from "./MonthCalendar";
 
 const ALL_HABITS = "all";
@@ -46,7 +54,7 @@ export function HistoryScreen() {
     [completions],
   );
 
-  if (!habits || !byHabit) return <Screen title="History" />;
+  if (!habits || !completions || !byHabit) return <Screen title="History" />;
 
   if (habits.length === 0) {
     return (
@@ -75,52 +83,70 @@ export function HistoryScreen() {
   const getDay = (date: DateKey): CalendarDay => {
     if (habit) {
       const status = getDayStatus(habit, byHabit.get(habit.id) ?? NO_COMPLETIONS, date, today);
-      return {
-        mark: <StatusMark status={status} color={habit.color} />,
-        description: dayStatusText(status, habit.schedule),
-      };
+      const description = dayStatusText(status, habit.schedule);
+      const color = habit.color;
+      switch (status) {
+        case "full":
+          return { progress: 1, complete: true, color, description };
+        case "minimum":
+          return { progress: 0.5, color, description };
+        case "skipped":
+          return { progress: 0, skipped: true, color, description };
+        default:
+          return { progress: 0, color, description };
+      }
     }
     const { done, expected } = summarizeDay(shown, byHabit, date, today);
     if (expected === 0) {
-      return { mark: null, description: done > 0 ? `${String(done)} done` : "Nothing due" };
+      return {
+        progress: done > 0 ? 1 : 0,
+        complete: done > 0,
+        description: done > 0 ? `${String(done)} done` : "Nothing due",
+      };
     }
     return {
-      mark: <ProgressRing size="sm" value={done / expected} />,
+      progress: done / expected,
+      complete: done === expected,
       description: `${String(done)} of ${String(expected)} done`,
     };
   };
 
-  return (
-    <Screen title="History">
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Habit
-        <select
-          value={habit ? habit.id : ALL_HABITS}
-          onChange={(event) => {
-            setFilter(event.target.value);
-          }}
-          className="min-h-11 rounded-xl border border-stone-300 bg-white px-3 text-base font-normal text-stone-900 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
-        >
-          <option value={ALL_HABITS}>All habits</option>
-          {active.map((h) => (
+  const monthSummary = summarizeMonth(shown, byHabit, visibleMonth, today);
+  const caption =
+    monthSummary.rate === null
+      ? undefined
+      : `${String(Math.round(monthSummary.rate * 100))}% · ${String(monthSummary.fullDays)} full ${monthSummary.fullDays === 1 ? "day" : "days"}`;
+
+  const filterSelect = (
+    <PillSelect label="Habit" value={habit ? habit.id : ALL_HABITS} onChange={setFilter}>
+      <option value={ALL_HABITS}>All habits</option>
+      {active.map((h) => (
+        <option key={h.id} value={h.id}>
+          {h.emoji} {h.name}
+        </option>
+      ))}
+      {archived.length > 0 && (
+        <optgroup label="Archived">
+          {archived.map((h) => (
             <option key={h.id} value={h.id}>
               {h.emoji} {h.name}
             </option>
           ))}
-          {archived.length > 0 && (
-            <optgroup label="Archived">
-              {archived.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.emoji} {h.name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-      </label>
+        </optgroup>
+      )}
+    </PillSelect>
+  );
 
+  return (
+    <Screen
+      title="History"
+      subtitle={`${String(countLoggedDays(completions))} days logged`}
+      actions={filterSelect}
+      glow="sky"
+    >
       <MonthCalendar
         month={visibleMonth}
+        caption={caption}
         today={today}
         selected={selected}
         canGoBack={visibleMonth > firstMonth}
@@ -132,45 +158,31 @@ export function HistoryScreen() {
 
       <DayDetails habits={shown} byHabit={byHabit} date={selected} today={today} />
 
-      <section aria-labelledby="year-heading" className="flex flex-col gap-3">
-        <h2 id="year-heading" className="text-lg font-semibold">
-          Last 12 months
-        </h2>
-        {shown.length === 0 ? (
-          <p className="text-sm text-stone-500 dark:text-stone-400">
+      <section aria-labelledby="year-heading" className="flex flex-col gap-3 px-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="year-heading" className="text-xl font-medium">
+            A year in orbit
+          </h2>
+          <p className="section-label">Longest run {getBestRun(shown, completions, today)}d</p>
+        </div>
+        {shown.length === 0 && (
+          <p className="text-sm text-muted">
             All your habits are archived. Pick one above to see its history.
           </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {shown.map((h) => (
-              <HabitHeatmap
-                key={h.id}
-                habit={h}
-                byDate={byHabit.get(h.id) ?? NO_COMPLETIONS}
-                today={today}
-              />
-            ))}
-          </ul>
         )}
-        <HeatmapLegend color={habit?.color} />
+        {shown.length > 0 && habit && (
+          <HabitHeatmap
+            habit={habit}
+            byDate={byHabit.get(habit.id) ?? NO_COMPLETIONS}
+            today={today}
+          />
+        )}
+        {shown.length > 0 && !habit && (
+          <YearHeatmap habits={shown} byHabit={byHabit} today={today} />
+        )}
       </section>
     </Screen>
   );
-}
-
-function StatusMark({ status, color }: { status: DayStatus; color: string }) {
-  switch (status) {
-    case "full":
-    case "minimum":
-    case "skipped":
-      return <CompletionMark kind={status} color={color} size="sm" />;
-    case "pending":
-      return <CompletionMark kind={undefined} color={color} size="sm" />;
-    case "missed":
-      return <span aria-hidden="true" className="size-1.5 rounded-full bg-stone-400" />;
-    default:
-      return null;
-  }
 }
 
 type DayDetailsProps = {
@@ -183,42 +195,70 @@ type DayDetailsProps = {
 function DayDetails({ habits, byHabit, date, today }: DayDetailsProps) {
   const [loggingId, setLoggingId] = useState<string | null>(null);
   const entries = getDayEntries(habits, byHabit, date, today);
-  const heading = date === today ? "Today" : format(parseDateKey(date), "EEEE d MMMM");
+  const isToday = date === today;
+  const day = parseDateKey(date);
   const loggable = canLogOn(date, today);
   const logging = entries.find((entry) => entry.habit.id === loggingId);
+  const closed = entries.length > 0 ? summarizeDay(habits, byHabit, date, today) : undefined;
+  const notes = entries.filter((entry) => entry.completion?.note);
 
   return (
     <>
-      <section aria-labelledby="day-heading" className="flex flex-col gap-2">
-        <h2 id="day-heading" aria-live="polite" className="text-lg font-semibold">
-          {heading}
-        </h2>
+      <section
+        aria-labelledby="day-heading"
+        className="flex flex-col gap-4 rounded-3xl border border-line bg-surface p-4"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 id="day-heading" aria-live="polite" className="section-label">
+            {/* Short on screen, as in the designs; spelled out for screen readers. */}
+            <span aria-hidden="true">
+              {isToday ? `Today · ${format(day, "d MMM")}` : format(day, "EEE · d MMM")}
+            </span>
+            <span className="sr-only">{isToday ? "Today" : format(day, "EEEE d MMMM")}</span>
+          </h2>
+          {closed && closed.expected > 0 && (
+            <p className="text-lg font-medium">
+              {closed.done} of {closed.expected} closed
+            </p>
+          )}
+        </div>
         {entries.length === 0 ? (
-          <p className="text-sm text-stone-500 dark:text-stone-400">No habits on this day yet.</p>
+          <p className="text-sm text-muted">No habits on this day yet.</p>
         ) : (
           <>
-            {date !== today && (
-              <p className="text-sm text-stone-500 dark:text-stone-400">
+            <ul className="flex flex-wrap gap-x-2 gap-y-2.5">
+              {entries.map((entry) => (
+                <li key={entry.habit.id}>
+                  <DayChip
+                    entry={entry}
+                    onLog={
+                      loggable && !entry.habit.archived
+                        ? () => {
+                            setLoggingId(entry.habit.id);
+                          }
+                        : undefined
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+            {notes.length > 0 && (
+              <ul className="flex flex-col gap-1 text-sm text-muted">
+                {notes.map(({ habit, completion }) => (
+                  <li key={habit.id}>
+                    <span className="text-soft">{habit.name}:</span>{" "}
+                    <span className="italic">“{completion?.note}”</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!isToday && (
+              <p className="text-sm text-muted">
                 {loggable
                   ? "Forgot to log? Tap a habit to update this day."
                   : `Only the last ${String(BACKFILL_DAYS)} days can be changed.`}
               </p>
             )}
-            <ul className="flex flex-col gap-2">
-              {entries.map((entry) => (
-                <DayEntryRow
-                  key={entry.habit.id}
-                  entry={entry}
-                  onLog={
-                    loggable && !entry.habit.archived
-                      ? () => {
-                          setLoggingId(entry.habit.id);
-                        }
-                      : undefined
-                  }
-                />
-              ))}
-            </ul>
           </>
         )}
       </section>
@@ -234,75 +274,94 @@ function DayDetails({ habits, byHabit, date, today }: DayDetailsProps) {
   );
 }
 
-function DayEntryRow({ entry, onLog }: { entry: DayEntry; onLog?: () => void }) {
-  const { habit, status, completion } = entry;
+/**
+ * A habit on the chosen day, as a pill: filled in its colour when done, tinted
+ * for the minimum version, dashed when skipped, and struck through when missed.
+ */
+function DayChip({ entry, onLog }: { entry: DayEntry; onLog?: () => void }) {
+  const { habit, status } = entry;
+  const { value } = habitColor(habit.color);
+  let tone = "border-line-strong text-soft";
+  let style: CSSProperties | undefined;
+  if (status === "full") {
+    tone = "border-transparent font-semibold text-on-habit";
+    style = { backgroundColor: value };
+  } else if (status === "minimum") {
+    tone = "font-semibold text-ink";
+    style = {
+      borderColor: value,
+      backgroundColor: `color-mix(in oklab, ${value} 22%, transparent)`,
+    };
+  } else if (status === "missed") {
+    tone = "border-dashed border-ink/30 text-muted line-through";
+  } else if (status === "skipped") {
+    tone = "border-dashed border-ink/30 text-muted";
+  } else if (status === "off") {
+    tone = "border-line text-muted";
+  }
+
   const content = (
     <>
-      <HabitIcon emoji={habit.emoji} color={habit.color} />
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium">{habit.name}</span>
-        <span className="block text-sm text-stone-500 dark:text-stone-400">
-          {dayStatusText(status, habit.schedule)}
-        </span>
-        {completion?.note && (
-          <span className="block text-sm text-stone-500 italic dark:text-stone-400">
-            “{completion.note}”
-          </span>
-        )}
-      </span>
-      <StatusMark status={status} color={habit.color} />
+      <span>{habit.name}</span>
+      <span className="sr-only">, {dayStatusText(status, habit.schedule)}</span>
     </>
   );
+  const chipClass = clsx("flex h-7.5 items-center rounded-full border px-3", tone);
 
-  return (
-    <li className="rounded-2xl bg-white shadow-sm dark:bg-stone-900">
-      {onLog ? (
-        <button
-          type="button"
-          onClick={onLog}
-          className="flex w-full items-center gap-3 rounded-2xl p-3 text-left hover:bg-stone-50 active:bg-stone-100 dark:hover:bg-stone-800 dark:active:bg-stone-800"
-        >
-          {content}
-          <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-stone-400" />
-        </button>
-      ) : (
-        <div className="flex items-center gap-3 p-3">{content}</div>
-      )}
-    </li>
+  return onLog ? (
+    <button
+      type="button"
+      onClick={onLog}
+      className={clsx("touch-target hover:brightness-110", chipClass)}
+      style={style}
+    >
+      {content}
+    </button>
+  ) : (
+    <span className={chipClass} style={style}>
+      {content}
+    </span>
   );
 }
 
-function HabitHeatmap({
-  habit,
-  byDate,
-  today,
-}: {
+type YearHeatmapProps = {
+  habits: readonly Habit[];
+  byHabit: ReadonlyMap<string, CompletionsByDate>;
+  today: DateKey;
+};
+
+/** All habits in one grid, in the accent colour. */
+function YearHeatmap({ habits, byHabit, today }: YearHeatmapProps) {
+  const data = useMemo(() => buildYearHeatmap(habits, byHabit, today), [habits, byHabit, today]);
+  const { fullDays, partialDays } = data.totals;
+  return (
+    <Heatmap
+      weeks={data.weeks}
+      monthLabels={data.monthLabels}
+      label={`All habits, last 12 months: ${String(fullDays)} full days, ${String(partialDays)} partial days`}
+    />
+  );
+}
+
+type HabitHeatmapProps = {
   habit: Habit;
   byDate: CompletionsByDate;
   today: DateKey;
-}) {
+};
+
+/** One habit's year, in its colour. */
+function HabitHeatmap({ habit, byDate, today }: HabitHeatmapProps) {
   const data = useMemo(() => buildHeatmap(habit, byDate, today), [habit, byDate, today]);
   const { full, minimum, skipped, missed } = data.totals;
   const summary =
     `${habit.name}, last 12 months: ${String(full)} done, ${String(minimum)} minimum, ` +
     `${String(skipped)} skipped, ${String(missed)} missed`;
-
   return (
-    <li className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm dark:bg-stone-900">
-      <div className="flex items-center gap-2">
-        <span aria-hidden="true">{habit.emoji}</span>
-        <h3 className="truncate font-medium">{habit.name}</h3>
-        <span className="ml-auto shrink-0 text-sm text-stone-500 tabular-nums dark:text-stone-400">
-          {full + minimum} done
-        </span>
-      </div>
-      <Heatmap
-        weeks={data.weeks}
-        monthLabels={data.monthLabels}
-        color={habit.color}
-        schedule={habit.schedule}
-        label={summary}
-      />
-    </li>
+    <Heatmap
+      weeks={data.weeks}
+      monthLabels={data.monthLabels}
+      color={habit.color}
+      label={summary}
+    />
   );
 }

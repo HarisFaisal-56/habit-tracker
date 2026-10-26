@@ -38,8 +38,8 @@ describe("resolveTheme", () => {
 describe("applyTheme", () => {
   it("toggles the dark class, native control colours and the browser theme colour", () => {
     document.head.innerHTML = `
-      <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
-      <meta name="theme-color" content="#0c0a09" media="(prefers-color-scheme: dark)">`;
+      <meta name="theme-color" content="#f6f6f1" media="(prefers-color-scheme: light)">
+      <meta name="theme-color" content="#07080b" media="(prefers-color-scheme: dark)">`;
     const root = document.documentElement;
     const colours = () =>
       [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map(
@@ -49,12 +49,12 @@ describe("applyTheme", () => {
     applyTheme("dark");
     expect(root).toHaveClass("dark");
     expect(root.style.colorScheme).toBe("dark");
-    expect(colours()).toEqual(["#0c0a09", "#0c0a09"]);
+    expect(colours()).toEqual(["#07080b", "#07080b"]);
 
     applyTheme("light");
     expect(root).not.toHaveClass("dark");
     expect(root.style.colorScheme).toBe("light");
-    expect(colours()).toEqual(["#fafaf9", "#fafaf9"]);
+    expect(colours()).toEqual(["#f6f6f1", "#f6f6f1"]);
   });
 });
 

@@ -22,7 +22,7 @@ describe("AppLayout", () => {
   it("shows the Today screen at the root and marks its tab as current", () => {
     renderAt("/");
 
-    expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Today’s orbit" })).toBeInTheDocument();
     expect(within(getTabBar()).getByRole("link", { name: "Today" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -46,7 +46,7 @@ describe("AppLayout", () => {
   });
 
   it.each([
-    ["/habits", "Habits"],
+    ["/habits", "Your habits"],
     ["/history", "History"],
     ["/review", "Weekly review"],
     ["/settings", "Settings"],
@@ -60,6 +60,6 @@ describe("AppLayout", () => {
     const router = renderAt("/does-not-exist");
 
     expect(router.state.location.pathname).toBe("/");
-    expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Today’s orbit" })).toBeInTheDocument();
   });
 });

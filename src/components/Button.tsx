@@ -2,17 +2,22 @@ import clsx from "clsx";
 import type { LucideIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "cta";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary:
-    "bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:active:bg-emerald-700",
+    "min-h-11 rounded-2xl bg-accent text-sm text-accent-ink hover:brightness-95 active:brightness-95 disabled:opacity-50",
   secondary:
-    "bg-stone-200 text-stone-900 hover:bg-stone-300 active:bg-stone-300 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700 dark:active:bg-stone-700",
+    "min-h-11 rounded-2xl border border-line bg-surface text-sm text-ink hover:bg-raised active:bg-raised disabled:opacity-50",
   ghost:
-    "text-stone-700 hover:bg-stone-200 active:bg-stone-200 dark:text-stone-300 dark:hover:bg-stone-800 dark:active:bg-stone-800",
+    "min-h-11 rounded-2xl text-sm text-muted hover:bg-raised hover:text-ink active:bg-raised disabled:opacity-50",
   danger:
-    "bg-rose-50 text-rose-700 hover:bg-rose-100 active:bg-rose-100 dark:bg-rose-950 dark:text-rose-300 dark:hover:bg-rose-900 dark:active:bg-rose-900",
+    "min-h-11 rounded-2xl text-sm text-danger hover:bg-raised active:bg-raised disabled:opacity-50",
+  /**
+   * A screen's one big action, e.g. saving the weekly review. Stays opaque when
+   * disabled, so it can be pinned over scrolling content.
+   */
+  cta: "glow-accent min-h-13 rounded-full bg-accent text-lg text-accent-ink hover:brightness-95 active:brightness-95 disabled:bg-raised disabled:text-muted disabled:shadow-none",
 };
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -32,7 +37,7 @@ export function Button({
     <button
       type={type}
       className={clsx(
-        "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold motion-safe:transition-colors disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 px-5 font-semibold motion-safe:transition-colors",
         VARIANTS[variant],
         className,
       )}
@@ -44,15 +49,27 @@ export function Button({
   );
 }
 
+const ICON_VARIANTS = {
+  ghost:
+    "size-11 rounded-full text-muted hover:bg-raised hover:text-ink active:bg-raised disabled:opacity-40",
+  /** The screen's main action, e.g. adding a habit. */
+  primary:
+    "glow-accent size-12 rounded-2xl bg-accent text-accent-ink hover:brightness-95 active:brightness-95",
+  /** A bordered square, e.g. the month arrows on History. */
+  tile: "size-11 rounded-2xl border border-line bg-surface text-soft hover:bg-raised active:bg-raised disabled:text-muted/50",
+} as const;
+
 type IconButtonProps = Omit<ComponentProps<"button">, "children" | "aria-label"> & {
   /** Accessible name; also shown as a tooltip. */
   label: string;
   icon: LucideIcon;
+  variant?: keyof typeof ICON_VARIANTS;
 };
 
 export function IconButton({
   label,
   icon: Icon,
+  variant = "ghost",
   className,
   type = "button",
   ...props
@@ -63,7 +80,8 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={clsx(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-full text-stone-500 hover:bg-stone-200 active:bg-stone-200 disabled:opacity-40 dark:text-stone-400 dark:hover:bg-stone-800 dark:active:bg-stone-800 motion-safe:transition-colors",
+        "inline-flex shrink-0 items-center justify-center motion-safe:transition",
+        ICON_VARIANTS[variant],
         className,
       )}
       {...props}

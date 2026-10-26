@@ -4,10 +4,14 @@ import { eachDay } from "../../domain/dates";
 import { makeCompletions, makeHabit, makeIndex, on } from "../../test/factories";
 import {
   buildHeatmap,
+  buildYearHeatmap,
+  countLoggedDays,
+  getDayLevel,
   getDayEntries,
   getMonthGrid,
   HEATMAP_WEEKS,
   summarizeDay,
+  summarizeMonth,
 } from "./historyData";
 
 describe("getMonthGrid", () => {
@@ -138,6 +142,13 @@ describe("buildHeatmap", () => {
     expect(status("2025-01-09")).toBe("future");
     // Missed: 01-02, 01-06, 01-07.
     expect(totals).toEqual({ full: 1, minimum: 1, skipped: 1, missed: 3 });
+
+    const level = (date: string) => weeks.flat().find((cell) => cell.date === date)?.level;
+    expect(level("2025-01-03")).toBe(4);
+    expect(level("2025-01-04")).toBe(2); // the minimum version is half as bright
+    expect(level("2025-01-02")).toBe(0);
+    expect(level("2025-01-01")).toBeNull(); // not drawn before the habit started
+    expect(level("2025-01-09")).toBeNull();
   });
 
   it("labels months on the column containing their 1st", () => {
@@ -157,5 +168,84 @@ describe("buildHeatmap", () => {
     const index = makeIndex(habit, on("full", "2023-06-01", "2024-06-01"));
 
     expect(buildHeatmap(habit, index, today).totals.full).toBe(1);
+  });
+});
+
+describe("summarizeMonth", () => {
+  const habits = [makeHabit({ id: "a" }), makeHabit({ id: "b" })];
+
+  it("rates the month so far and counts days where everything due was done", () => {
+    const byHabit = indexCompletionsByHabit([
+      ...makeCompletions("a", on("full", "2025-01-01", "2025-01-02", "2025-01-03")),
+      ...makeCompletions("b", on("minimum", "2025-01-01", "2025-01-02")),
+    ]);
+
+    // Jan 1-3 up to the 3rd: 5 of 6 done; days 1 and 2 are complete.
+    expect(summarizeMonth(habits, byHabit, "2025-01-15", "2025-01-03")).toEqual({
+      rate: 5 / 6,
+      fullDays: 2,
+    });
+  });
+
+  it("has no rate before anything was expected", () => {
+    expect(summarizeMonth(habits, new Map(), "2024-11-01", "2025-01-03")).toEqual({
+      rate: null,
+      fullDays: 0,
+    });
+  });
+});
+
+describe("countLoggedDays", () => {
+  it("counts distinct days with something done, ignoring skips", () => {
+    const completions = [
+      ...makeCompletions("a", { "2025-01-01": "full", "2025-01-02": "skipped" }),
+      ...makeCompletions("b", { "2025-01-01": "minimum", "2025-01-03": "full" }),
+    ];
+    expect(countLoggedDays(completions)).toBe(2);
+    expect(countLoggedDays([])).toBe(0);
+  });
+});
+
+describe("getDayLevel", () => {
+  it.each([
+    [{ done: 0, expected: 0 }, 0],
+    [{ done: 1, expected: 0 }, 4], // a bonus day with nothing due
+    [{ done: 0, expected: 4 }, 0],
+    [{ done: 1, expected: 4 }, 1],
+    [{ done: 2, expected: 4 }, 2],
+    [{ done: 3, expected: 4 }, 3],
+    [{ done: 4, expected: 4 }, 4],
+  ])("rates %o as level %i", (day, expected) => {
+    expect(getDayLevel(day)).toBe(expected);
+  });
+});
+
+describe("buildYearHeatmap", () => {
+  const today = "2025-01-08";
+
+  it("shades each day by the share of habits done, from the first habit's start", () => {
+    const habits = [
+      makeHabit({ id: "a", createdAt: "2025-01-02" }),
+      makeHabit({ id: "b", createdAt: "2025-01-02" }),
+    ];
+    const byHabit = indexCompletionsByHabit([
+      ...makeCompletions("a", on("full", "2025-01-02", "2025-01-03")),
+      ...makeCompletions("b", on("minimum", "2025-01-02")),
+    ]);
+
+    const { weeks, totals } = buildYearHeatmap(habits, byHabit, today);
+    const cell = (date: string) => weeks.flat().find((c) => c.date === date);
+
+    expect(cell("2025-01-01")?.level).toBeNull();
+    expect(cell("2025-01-02")).toMatchObject({ level: 4, description: "2 of 2 done" });
+    expect(cell("2025-01-03")).toMatchObject({ level: 2, description: "1 of 2 done" });
+    expect(cell("2025-01-04")?.level).toBe(0);
+    expect(cell("2025-01-09")?.level).toBeNull();
+    expect(totals).toEqual({ fullDays: 1, partialDays: 1 });
+  });
+
+  it("draws nothing without habits", () => {
+    const { weeks } = buildYearHeatmap([], new Map(), today);
+    expect(weeks.flat().every((cell) => cell.level === null)).toBe(true);
   });
 });

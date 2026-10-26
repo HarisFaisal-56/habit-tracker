@@ -1,5 +1,5 @@
 import type { Weekday } from "../../domain/dates";
-import type { Schedule } from "../../domain/habit";
+import type { Habit, Schedule } from "../../domain/habit";
 
 /** Weekdays in display order: weeks start on Monday. */
 export const WEEKDAYS_MONDAY_FIRST: readonly Weekday[] = [1, 2, 3, 4, 5, 6, 0];
@@ -41,4 +41,27 @@ export function describeSchedule(schedule: Schedule): string {
         ? "Once a week"
         : `${String(schedule.timesPerWeek)} times a week`;
   }
+}
+
+/** A short label for chips and captions: "Daily", "Mon, Wed, Fri", "3 times a week". */
+export function describeScheduleShort(schedule: Schedule): string {
+  return schedule.type === "daily" ? "Daily" : describeSchedule(schedule);
+}
+
+/** Counts for the Habits caption, e.g. "05 orbits · 4 daily · 1 weekly". Zero counts are left out. */
+export function summarizeHabits(habits: readonly Habit[]): string {
+  const count = (type: Schedule["type"]) =>
+    habits.filter((habit) => habit.schedule.type === type).length;
+  const parts = [
+    `${String(habits.length).padStart(2, "0")} ${habits.length === 1 ? "orbit" : "orbits"}`,
+  ];
+  const kinds: [number, string][] = [
+    [count("daily"), "daily"],
+    [count("days"), "some days"],
+    [count("weekly"), "weekly"],
+  ];
+  for (const [n, label] of kinds) {
+    if (n > 0) parts.push(`${String(n)} ${label}`);
+  }
+  return parts.join(" · ");
 }
