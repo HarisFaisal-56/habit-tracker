@@ -20,10 +20,10 @@ const VARIANTS: Record<ButtonVariant, string> = {
   "danger-ghost":
     "rounded-2xl text-base font-normal text-danger hover:bg-danger/8 active:bg-danger/8 disabled:opacity-50",
   /**
-   * A screen's one big action, e.g. saving the weekly review. Stays opaque when
-   * disabled, so it can be pinned over scrolling content.
+   * A screen's one big action, e.g. starting from the welcome card. Pass its
+   * height and type size. Stays opaque when disabled.
    */
-  cta: "lime-gloss lime-glow-lg min-h-14 rounded-full text-lg text-accent-ink disabled:bg-raised disabled:bg-none disabled:text-muted disabled:shadow-none",
+  cta: "lime-gloss lime-glow-lg rounded-full font-semibold text-accent-ink disabled:bg-raised disabled:bg-none disabled:text-muted disabled:shadow-none",
 };
 
 type ButtonProps = ComponentProps<"button"> & {
@@ -43,7 +43,10 @@ export function Button({
     <button
       type={type}
       className={clsx(
-        "inline-flex min-h-11.5 items-center justify-center gap-2 px-4.5 text-sm font-semibold active:scale-98 motion-safe:transition",
+        "inline-flex items-center justify-center gap-2 px-4.5 active:scale-98 motion-safe:transition",
+        // A big call to action takes its height and type size from the caller.
+        variant !== "cta" && "min-h-11.5",
+        variant !== "cta" && variant !== "danger-ghost" && "text-sm font-semibold",
         VARIANTS[variant],
         className,
       )}

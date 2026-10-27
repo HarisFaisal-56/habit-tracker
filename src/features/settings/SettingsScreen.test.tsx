@@ -211,7 +211,7 @@ describe("SettingsScreen", () => {
         expect(toggle).toHaveAttribute("aria-checked", "true");
       });
       expect(useSettings.getState().remindersEnabled).toBe(true);
-      expect(section("Reminders").getByText(/1 habit has a reminder time/)).toBeVisible();
+      expect(section("Reminders").getByText(/1 habit nudges you if it’s still open/)).toBeVisible();
       // The web can't deliver reminders to a closed app; say so plainly.
       expect(section("Reminders").getByText(/Fully closing it pauses them/)).toBeVisible();
     });
