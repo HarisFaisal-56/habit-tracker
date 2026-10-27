@@ -6,8 +6,9 @@ import {
   buildHeatmap,
   buildYearHeatmap,
   countLoggedDays,
-  getDayLevel,
+  describeDayVerdict,
   getDayEntries,
+  getDayLevel,
   getMonthGrid,
   HEATMAP_WEEKS,
   summarizeDay,
@@ -247,5 +248,23 @@ describe("buildYearHeatmap", () => {
   it("draws nothing without habits", () => {
     const { weeks } = buildYearHeatmap([], new Map(), today);
     expect(weeks.flat().every((cell) => cell.level === null)).toBe(true);
+  });
+});
+
+describe("describeDayVerdict", () => {
+  it("rates a past day by the share of check-ins done", () => {
+    expect(describeDayVerdict({ done: 5, expected: 5 }, false)).toBe("Every orbit closed");
+    expect(describeDayVerdict({ done: 4, expected: 5 }, false)).toBe("Strong day");
+    expect(describeDayVerdict({ done: 3, expected: 5 }, false)).toBe("Kept the chain");
+    expect(describeDayVerdict({ done: 1, expected: 5 }, false)).toBe("A light day");
+  });
+
+  it("counts what's still open today", () => {
+    expect(describeDayVerdict({ done: 2, expected: 5 }, true)).toBe("3 still open");
+    expect(describeDayVerdict({ done: 5, expected: 5 }, true)).toBe("Every orbit closed");
+  });
+
+  it("says when nothing was due", () => {
+    expect(describeDayVerdict({ done: 0, expected: 0 }, false)).toBe("Nothing due");
   });
 });

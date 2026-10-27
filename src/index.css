@@ -475,6 +475,17 @@
   }
 }
 
+/* A soft accent band behind the current week on the History calendar. */
+@utility week-band {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--color-accent) 6%, transparent) 25%,
+    color-mix(in oklab, var(--color-accent) 6%, transparent) 75%,
+    transparent
+  );
+}
+
 /* Faint diagonal stripes, e.g. days still to come in the review's check-ins. */
 @utility bg-hatch {
   background: repeating-linear-gradient(
