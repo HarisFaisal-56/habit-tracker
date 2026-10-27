@@ -1,5 +1,4 @@
-import clsx from "clsx";
-import { habitColor } from "../../components/habitColors";
+import { habitColor, tint } from "../../components/habitColors";
 import type { Habit } from "../../domain/habit";
 import type { WeekProgress } from "../../domain/schedule";
 import { formatWeekProgress } from "./statsData";
@@ -11,12 +10,13 @@ type WeekProgressBarProps = {
   label?: string;
 };
 
-/** A week's count and a bar in the habit's colour. */
+/** A week's count and one segment per check-in due, lit in the habit's colour as they're done. */
 export function WeekProgressBar({ habit, week, label = "This week" }: WeekProgressBarProps) {
   const text = formatWeekProgress(week, habit.schedule);
+  const { value } = habitColor(habit.color);
   return (
     <div>
-      <div className="mb-1 flex justify-between text-sm">
+      <div className="mb-1.75 flex justify-between text-note">
         <span className="text-muted">{label}</span>
         <span className="font-medium tabular-nums">{text}</span>
       </div>
@@ -28,15 +28,20 @@ export function WeekProgressBar({ habit, week, label = "This week" }: WeekProgre
           aria-valuemax={week.target}
           aria-valuenow={Math.min(week.done, week.target)}
           aria-valuetext={text}
-          className="h-2 overflow-hidden rounded-full bg-ink/10"
+          className="flex gap-0.75"
         >
-          <div
-            className={clsx(
-              "h-full rounded-full bg-current motion-safe:transition-[width]",
-              habitColor(habit.color).accent,
-            )}
-            style={{ width: `${String(Math.min(100, (week.done / week.target) * 100))}%` }}
-          />
+          {Array.from({ length: week.target }, (_, index) => {
+            const lit = index < week.done;
+            return (
+              <span
+                key={index}
+                className={lit ? "h-2 flex-1 rounded-xs" : "h-2 flex-1 rounded-xs bg-ink/7"}
+                style={
+                  lit ? { background: value, boxShadow: `0 0 8px ${tint(value, 0.45)}` } : undefined
+                }
+              />
+            );
+          })}
         </div>
       )}
     </div>

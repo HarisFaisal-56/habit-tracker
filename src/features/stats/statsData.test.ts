@@ -7,6 +7,10 @@ import {
   formatRateChange,
   formatStreak,
   formatWeekProgress,
+  getRateChange,
+  getTrendLabels,
+  rankByRate,
+  smoothPath,
 } from "./statsData";
 
 const today = "2025-01-10"; // Friday
@@ -66,6 +70,20 @@ describe("buildStats: comparison, trend and runs", () => {
     expect(stats.overall.rate).toBe(1);
     expect(stats.previous.rate).toBe(0);
     expect(stats.run).toEqual({ current: 5, best: 5 });
+    expect(stats.habits[0]?.previous.rate).toBe(0);
+  });
+
+  it("ranks habits by rate, best first, with no rate last", () => {
+    const habits = ["a", "b", "c"].map((id) => makeHabit({ id, createdAt: "2025-01-06" }));
+    const completions = [
+      ...makeCompletions("a", on("full", "2025-01-06")),
+      ...makeCompletions("b", on("full", "2025-01-06", "2025-01-07")),
+    ];
+    const stats = buildStats(habits, completions, today, 7);
+    const later = makeHabit({ id: "d", createdAt: "2025-01-11" });
+    const ranked = rankByRate([...stats.habits, ...buildStats([later], [], today, 7).habits]);
+
+    expect(ranked.map((s) => s.habit.id)).toEqual(["b", "a", "c", "d"]);
   });
 });
 
@@ -126,5 +144,36 @@ describe("formatWeekProgress", () => {
     expect(formatWeekProgress(week(0, 0), { type: "days", days: [1] })).toBe(
       "Nothing due this week",
     );
+  });
+});
+
+describe("getRateChange", () => {
+  it("is the difference in whole points", () => {
+    expect(getRateChange(0.82, 0.76)).toBe(6);
+    expect(getRateChange(0.5, 0.534)).toBe(-3);
+    expect(getRateChange(0.5, null)).toBeNull();
+  });
+});
+
+describe("getTrendLabels", () => {
+  it("labels the start and the middle of the window", () => {
+    expect(getTrendLabels("2026-10-21", 30)).toEqual(["22 SEP", "6 OCT"]);
+    expect(getTrendLabels("2026-10-21", 7)).toEqual(["15 OCT", "18 OCT"]);
+    expect(getTrendLabels("2026-10-21", 90)).toEqual(["24 JUL", "6 SEP"]);
+  });
+});
+
+describe("smoothPath", () => {
+  it("curves between points with control points halfway across", () => {
+    expect(
+      smoothPath([
+        { x: 0, y: 10 },
+        { x: 10, y: 0 },
+      ]),
+    ).toBe("M0.0 10.0 C5.0 10.0 5.0 0.0 10.0 0.0");
+  });
+
+  it("is empty without points", () => {
+    expect(smoothPath([])).toBe("");
   });
 });
