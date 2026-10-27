@@ -86,7 +86,7 @@ export function ReviewScreen() {
           <option value="last">Last week</option>
         </PillSelect>
       }
-      glow="rose"
+      glow="review"
     >
       {choice === "this" && isReviewDay(today) && !review && (
         <p className="rounded-3xl border border-accent/30 bg-accent/10 p-4 text-sm">

@@ -8,8 +8,8 @@ type EmptyStateProps = {
 
 export function EmptyState({ children, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-3xl border border-dashed border-line p-6 text-center">
-      <p className="text-muted">{children}</p>
+    <div className="card flex animate-rise flex-col items-center gap-4 rounded-card px-6 py-8 text-center">
+      <p className="text-md text-muted">{children}</p>
       {action}
     </div>
   );

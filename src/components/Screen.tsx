@@ -1,15 +1,14 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
-/** Each screen's coloured haze, as in the designs. Dark mode only. */
+/** Each screen's coloured haze, as in the design. Dark mode only. */
 const GLOWS = {
-  rings: "glow-at-rings glow-lime",
-  lime: "glow-at-top glow-lime",
-  chart: "glow-at-chart glow-lime",
-  neutral: "glow-at-top-right glow-neutral",
-  violet: "glow-at-top-right glow-violet",
-  sky: "glow-at-top-left glow-sky",
-  rose: "glow-at-top-right glow-rose",
+  today: "glow-today",
+  habits: "glow-habits",
+  history: "glow-history",
+  stats: "glow-stats",
+  review: "glow-review",
+  settings: "glow-settings",
 } as const;
 
 type ScreenProps = {
@@ -21,6 +20,8 @@ type ScreenProps = {
   /** Line the actions up with the top of the header, or centre them on it (default). */
   actionsAt?: "top" | "middle";
   glow?: keyof typeof GLOWS;
+  /** Space between the sections, in the design's 18px or 20px. */
+  gap?: "default" | "loose";
   children?: ReactNode;
 };
 
@@ -30,15 +31,19 @@ export function Screen({
   actions,
   actionsAt = "middle",
   glow,
+  gap = "default",
   children,
 }: ScreenProps) {
   return (
-    <section aria-labelledby="screen-title" className="relative isolate flex flex-col gap-5">
+    <section
+      aria-labelledby="screen-title"
+      className={clsx("relative isolate flex flex-col", gap === "loose" ? "gap-5" : "gap-4.5")}
+    >
       {glow && <div aria-hidden="true" className={clsx("screen-glow", GLOWS[glow])} />}
-      <header className="flex items-center justify-between gap-3 px-1 pt-screen">
+      <header className="flex animate-rise items-center justify-between gap-3 px-1 pt-screen">
         <div className="min-w-0">
-          {subtitle && <p className="eyebrow mb-2.5">{subtitle}</p>}
-          <h1 id="screen-title" className="text-title font-normal">
+          {subtitle && <p className="eyebrow mb-2.5 flex items-center gap-2">{subtitle}</p>}
+          <h1 id="screen-title" className="text-gradient text-title font-normal">
             {title}
           </h1>
         </div>

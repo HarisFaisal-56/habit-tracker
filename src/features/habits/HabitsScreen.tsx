@@ -78,7 +78,7 @@ export function HabitsScreen() {
     <Screen
       title="Your habits"
       subtitle={habits && summarizeHabits(active)}
-      glow="violet"
+      glow="habits"
       actions={
         habits &&
         active.length > 0 &&

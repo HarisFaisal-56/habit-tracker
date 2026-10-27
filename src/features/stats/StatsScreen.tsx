@@ -62,7 +62,7 @@ export function StatsScreen() {
     <Screen
       title="Stats"
       subtitle="Trajectory"
-      glow="chart"
+      glow="stats"
       actions={
         <SegmentedControl
           label="Time range"

@@ -73,7 +73,7 @@ export function TodayScreen() {
       subtitle={`${format(date, "EEE · d MMM")} · Day ${String(getDayOfYear(date))}`}
       actions={run > 0 && <RunBadge days={run} />}
       actionsAt="top"
-      glow="rings"
+      glow="today"
     >
       {list &&
         habits?.length === 0 &&

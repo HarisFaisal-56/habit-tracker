@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { buildHeatmap } from "../features/history/historyData";
 import { makeHabit, makeIndex } from "../test/factories";
@@ -31,28 +31,37 @@ describe("Heatmap", () => {
     const container = renderHeatmap();
 
     // 2 to 8 January.
-    expect(container.querySelectorAll("rect")).toHaveLength(7);
+    expect(container.querySelectorAll("circle")).toHaveLength(7);
     expect(screen.getByRole("img", { name: "Read, last 12 months" })).toBeInTheDocument();
   });
 
   it("makes done days brighter than minimum days, and leaves empty days neutral", () => {
     const container = renderHeatmap();
-    const cell = (title: string) =>
-      [...container.querySelectorAll("rect")].find((rect) =>
-        rect.querySelector("title")?.textContent.startsWith(title),
-      );
+    const cell = (date: string) =>
+      container.querySelector<SVGCircleElement>(`circle[data-date="${date}"]`);
 
-    expect(cell("Mon 6 Jan")?.style.fillOpacity).toBe("1");
-    expect(Number(cell("Tue 7 Jan")?.style.fillOpacity)).toBeLessThan(1);
-    expect(cell("Wed 8 Jan")).toHaveClass("fill-ink/8");
+    expect(cell("2025-01-06")?.style.fillOpacity).toBe("1");
+    expect(Number(cell("2025-01-07")?.style.fillOpacity)).toBeLessThan(1);
+    expect(cell("2025-01-08")).toHaveClass("fill-ink/6");
   });
 
-  it("describes each day in a tooltip", () => {
-    const container = renderHeatmap();
-    const titles = [...container.querySelectorAll("title")].map((title) => title.textContent);
+  it("shows the day under the pointer in a tooltip", () => {
+    renderHeatmap();
+    const svg = screen.getByRole("img", { name: "Read, last 12 months" });
+    const columns = data.weeks.length;
+    // Lay the grid out at one pixel per unit: 6.6 per column, less the last gap.
+    svg.getBoundingClientRect = () => new DOMRect(0, 0, columns * 6.6 - 1.4, 7 * 6.6 - 1.4);
 
-    expect(titles).toContain("Mon 6 Jan 2025: Done");
-    expect(titles).toContain("Fri 3 Jan 2025: Not logged"); // weekly goals have no fixed days
+    // Monday 6 January is the first day of the last column.
+    fireEvent.pointerMove(svg, { clientX: (columns - 1) * 6.6 + 2, clientY: 2 });
+    expect(screen.getByTestId("heatmap-tooltip")).toHaveTextContent("Mon 6 JanDone");
+
+    // Friday 3 January: weekly goals have no fixed days.
+    fireEvent.pointerMove(svg, { clientX: (columns - 2) * 6.6 + 2, clientY: 4 * 6.6 + 2 });
+    expect(screen.getByTestId("heatmap-tooltip")).toHaveTextContent("Fri 3 JanNot logged");
+
+    fireEvent.pointerLeave(svg);
+    expect(screen.queryByTestId("heatmap-tooltip")).not.toBeInTheDocument();
   });
 
   it("labels every other month under the grid", () => {

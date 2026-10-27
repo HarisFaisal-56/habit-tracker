@@ -142,7 +142,7 @@ export function HistoryScreen() {
       title="History"
       subtitle={`${String(countLoggedDays(completions))} days logged`}
       actions={filterSelect}
-      glow="sky"
+      glow="history"
     >
       <MonthCalendar
         month={visibleMonth}

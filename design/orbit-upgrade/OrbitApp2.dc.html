@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+@keyframes o2-pop{0%{transform:scale(.5);opacity:.2}60%{transform:scale(1.14);opacity:1}100%{transform:scale(1)}}
+@keyframes o2-sheet{from{transform:translateY(100%)}}
+@keyframes o2-fade{from{opacity:0}}
+@keyframes o2-rise{from{opacity:0;transform:translateY(14px);filter:blur(4px)}}
+@keyframes o2-spin{to{transform:rotate(360deg)}}
+@keyframes o2-shine{0%{background-position:160% 0}100%{background-position:-60% 0}}
+@keyframes o2-burst{0%{transform:rotate(var(--a)) translateY(0) scaleY(.2);opacity:0}25%{opacity:1}100%{transform:rotate(var(--a)) translateY(-150px) scaleY(1);opacity:0}}
+@keyframes o2-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+@keyframes o2-blink{0%,100%{opacity:1}50%{opacity:.35}}
+.o2-scroll::-webkit-scrollbar{display:none}
+.o2-root textarea::placeholder,.o2-root input::placeholder{color:#6e727b}
+</style>
+</helmet>
+<div class="o2-root" style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background-color:#07080b;background-image:url(public/stars.svg);background-size:390px 844px;color:#eceef2;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI Variable Text','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 0 0 9px #0d0e11,0 0 0 10px rgba(255,255,255,.08),0 50px 100px -30px rgba(0,0,0,.7)">
+
+<main ref="{{ scrollRef }}" class="o2-scroll" style="position:absolute;inset:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none">
+<div style="position:relative;isolation:isolate;padding:0 20px 128px">
+<div aria-hidden="true" style="position:absolute;top:-80px;left:-20px;right:-20px;height:720px;z-index:-1;pointer-events:none;background:{{ glowBg }}"></div>
+
+<!-- TODAY -->
+<sc-if value="{{ isToday }}" hint-placeholder-val="{{ true }}">
+<section style="display:flex;flex-direction:column;gap:18px">
+  <header style="display:flex;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b"><span style="width:6px;height:6px;border-radius:50%;background:#d4ff3a;box-shadow:0 0 8px #d4ff3a;animation:o2-blink 2.4s ease-in-out infinite"></span>Wed · 21 Oct · Day 294</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">Today’s orbit</h1>
+    </div>
+    <div style="align-self:flex-start;flex-shrink:0;white-space:nowrap;position:relative;border-radius:999px;padding:1px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(212,255,58,.55)">
+      <span aria-hidden="true" style="position:absolute;inset:-60%;background:conic-gradient(from 0deg,rgba(212,255,58,0) 0 60%,rgba(212,255,58,.95) 82%,rgba(212,255,58,0) 100%);animation:o2-spin 4.5s linear infinite"></span>
+      <p style="position:relative;margin:0;display:flex;align-items:center;gap:9px;border-radius:999px;background:linear-gradient(180deg,#171b0c,#0e1009);padding:6px 15px 6px 10px;font-size:14px;color:#b9c0cc">
+        {{ orbitIcon }}<span><span style="margin-right:4px;font-size:17px;font-weight:600;color:#d4ff3a;font-variant-numeric:tabular-nums">12</span>day run</span>
+      </p>
+    </div>
+  </header>
+
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center;animation:o2-rise .7s .08s cubic-bezier(.2,.8,.2,1) both">
+    <div style="position:relative;width:320px;height:320px;margin:-4px 0 -6px;animation:{{ breathe }}">
+      {{ ringsSvg }}
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <sc-if value="{{ notAllClosed }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:66px;line-height:1;font-weight:200;font-variant-numeric:tabular-nums;letter-spacing:-.04em;background:linear-gradient(180deg,#fff 40%,#a9afba);-webkit-background-clip:text;background-clip:text;color:transparent">{{ closed }}<span style="font-size:24px;font-weight:300;letter-spacing:0;-webkit-text-fill-color:#6e727b">/{{ due }}</span></span>
+          <span style="margin-top:12px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#8d919b">Closed</span>
+        </sc-if>
+        <sc-if value="{{ allClosed }}" hint-placeholder-val="{{ false }}">
+          <span style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#f0ffb0,#d4ff3a 55%,#9fc400);box-shadow:0 0 40px rgba(212,255,58,.6),inset 0 -4px 10px rgba(0,0,0,.15);color:#0b0d04;animation:o2-pop .6s cubic-bezier(.3,1.5,.5,1)">{{ I.checkBig }}</span>
+          <span style="margin-top:14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.16em;color:#d4ff3a">ALL ORBITS CLOSED</span>
+        </sc-if>
+        <span style="margin-top:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:#5d6169;font-variant-numeric:tabular-nums">{{ dayPct }}% OF TODAY</span>
+      </div>
+      <sc-if value="{{ allClosed }}" hint-placeholder-val="{{ false }}">
+        <div aria-hidden="true" style="position:absolute;left:50%;top:50%;width:0;height:0">
+          <sc-for list="{{ burst }}" as="b" hint-placeholder-count="0"><span style="position:absolute;left:-1px;top:-8px;width:2px;height:16px;border-radius:2px;background:{{ b.c }};box-shadow:0 0 8px {{ b.c }};--a:{{ b.a }};animation:o2-burst 1.1s {{ b.d }} cubic-bezier(.2,.7,.3,1) both"></span></sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);width:100%;border-radius:20px;border:1px solid transparent;background:linear-gradient(180deg,rgba(18,20,24,.85),rgba(13,14,17,.85)) padding-box,linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">
+      <sc-for list="{{ strip }}" as="x" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-left:1px solid {{ x.div }}">
+          {{ x.mark }}
+          <div><p style="margin:0;font-size:20px;line-height:1;font-weight:300;font-variant-numeric:tabular-nums;color:{{ x.color }}">{{ x.n }}</p><p style="margin:4px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">{{ x.label }}</p></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <ul style="list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:10px">
+    <sc-for list="{{ todayItems }}" as="t" hint-placeholder-count="5">
+      <li style="position:relative;border-radius:20px;border:1px solid transparent;background:{{ t.bg }};box-shadow:{{ t.shadow }};transition:box-shadow .4s;animation:o2-rise .6s {{ t.delay }} cubic-bezier(.2,.8,.2,1) both">
+        <button type="button" onClick="{{ t.onClick }}" onPointerDown="{{ t.onDown }}" onPointerUp="{{ t.onUp }}" onPointerLeave="{{ t.onUp }}" onContextMenu="{{ t.onMenu }}" style="all:unset;box-sizing:border-box;width:100%;min-height:62px;display:flex;align-items:center;gap:14px;padding:11px 14px 11px 14px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-touch-callout:none;transition:transform .18s cubic-bezier(.3,1.4,.5,1)" style-active="transform:scale(.975)">
+          <span style="position:relative;width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:12px;font-size:17px;background:{{ t.tileBg }};box-shadow:inset 0 0 0 1px {{ t.tileRing }}">{{ t.emoji }}<span style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:{{ t.hc }};box-shadow:0 0 0 2px #0e0f12,0 0 8px {{ t.glow }}"></span></span>
+          <span style="min-width:0;flex:1">
+            <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:1.25;font-weight:500;letter-spacing:-.01em">{{ t.name }}</span>
+            <span style="display:flex;align-items:center;gap:8px;margin-top:5px;min-width:0">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;color:{{ t.tone }}"><span style="color:{{ t.runColor }}">{{ t.runText }}</span>{{ t.rest }}</span>
+              <sc-if value="{{ t.isWeekly }}" hint-placeholder-val="{{ false }}">
+                <span style="display:flex;gap:3px;flex-shrink:0"><sc-for list="{{ t.segs }}" as="g" hint-placeholder-count="3"><span style="width:12px;height:3px;border-radius:2px;background:{{ g.bg }};box-shadow:{{ g.glow }};transition:background .3s"></span></sc-for></span>
+              </sc-if>
+            </span>
+            <sc-if value="{{ t.hasNote }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:6px;margin-top:6px;overflow:hidden;white-space:nowrap;font-size:13.5px;font-style:italic;color:#8d919b">{{ I.quote }}{{ t.note }}</span>
+            </sc-if>
+          </span>
+          <span style="flex-shrink:0;display:flex">{{ t.mark }}</span>
+        </button>
+      </li>
+    </sc-for>
+  </ul>
+  <p style="margin:4px 0 0;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:#4d5158"><span style="width:18px;height:1px;background:#27292e"></span>Tap to close · Hold for more<span style="width:18px;height:1px;background:#27292e"></span></p>
+</section>
+</sc-if>
+
+<!-- HABITS -->
+<sc-if value="{{ isHabits }}" hint-placeholder-val="{{ false }}">
+<section style="display:flex;flex-direction:column;gap:18px">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">05 orbits · 4 daily · 1 weekly</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">Your habits</h1>
+    </div>
+    <sc-if value="{{ showAdd }}" hint-placeholder-val="{{ true }}">
+      <button type="button" aria-label="Add habit" style="all:unset;cursor:pointer;position:relative;width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 120% at 30% 20%,#f2ffb8,#d4ff3a 50%,#a8cc10);color:#0b0d04;box-shadow:0 14px 34px -8px rgba(212,255,58,.6),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -3px 6px rgba(0,0,0,.12);transition:transform .2s cubic-bezier(.3,1.5,.5,1)" style-active="transform:scale(.92) rotate(90deg)">{{ I.plus }}</button>
+    </sc-if>
+  </header>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;animation:o2-rise .6s .05s cubic-bezier(.2,.8,.2,1) both">
+    <div style="position:relative;display:grid;grid-template-columns:repeat(2,auto);gap:4px;padding:4px;border-radius:999px;border:1px solid #1f2023;background:rgba(15,16,19,.7)">
+      <span aria-hidden="true" style="position:absolute;top:4px;bottom:4px;left:{{ hfLeft }};width:{{ hfWidth }};border-radius:999px;background:linear-gradient(180deg,#2a2d33,#1d1f24);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 12px -4px rgba(0,0,0,.6);transition:left .35s cubic-bezier(.4,1.3,.5,1),width .35s"></span>
+      <sc-for list="{{ habitFilters }}" as="f" hint-placeholder-count="2">
+        <button type="button" onClick="{{ f.onClick }}" style="all:unset;position:relative;cursor:pointer;height:34px;display:flex;align-items:center;gap:8px;border-radius:999px;padding:0 8px 0 14px;font-weight:500;font-size:15px;color:{{ f.color }};transition:color .2s">
+          {{ f.label }}<span style="min-width:20px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;background:{{ f.badgeBg }};color:{{ f.badgeColor }};transition:all .25s">{{ f.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ reordering }}" hint-placeholder-val="{{ false }}">
+      <button type="button" onClick="{{ stopReorder }}" style="all:unset;cursor:pointer;min-height:40px;padding:0 16px;border-radius:999px;font-size:14px;font-weight:600;color:#0b0d04;background:#d4ff3a">Done</button>
+    </sc-if>
+  </div>
+
+  <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px">
+    <sc-for list="{{ habitRows }}" as="h" hint-placeholder-count="5">
+      <li style="position:relative;border-radius:26px;border:1px solid transparent;background:{{ h.bg }};box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 20px 40px -30px {{ h.tileGlow }};opacity:{{ h.opacity }};animation:o2-rise .6s {{ h.delay }} cubic-bezier(.2,.8,.2,1) both">
+        <div style="position:relative;display:flex;flex-direction:column;gap:14px;padding:16px 16px 0">
+          <div style="display:flex;align-items:flex-start;gap:13px;padding-right:34px">
+            <span style="position:relative;width:46px;height:46px;flex-shrink:0;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:22px;background:{{ h.tileBg }};box-shadow:inset 0 0 0 1px {{ h.tileRing }},inset 0 1px 0 rgba(255,255,255,.12),0 10px 24px -10px {{ h.tileGlow }}">{{ h.emoji }}</span>
+            <span style="min-width:0;flex:1;padding-top:2px">
+              <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;line-height:1.2;font-weight:500;letter-spacing:-.015em">{{ h.name }}</span>
+              <span style="display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px;line-height:1.35;color:rgba(185,192,204,.75)">“{{ h.identity }}”</span>
+            </span>
+          </div>
+          <sc-if value="{{ h.notReorder }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+              <span style="display:flex;gap:8px">
+                <sc-for list="{{ h.days }}" as="d" hint-placeholder-count="7">
+                  <span style="position:relative;width:13px;display:flex;flex-direction:column;align-items:center;gap:7px">
+                    <span style="position:absolute;inset:-6px -5px;border-radius:10px;background:{{ d.band }};box-shadow:{{ d.bandRing }}"></span>
+                    <span style="position:relative;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;line-height:1;color:{{ d.letterColor }};font-weight:{{ d.letterWeight }}">{{ d.letter }}</span>
+                    <span style="position:relative;width:13px;height:13px;display:flex;align-items:center;justify-content:center">
+                      <span style="position:absolute;left:10px;top:5.5px;width:11px;height:2px;border-radius:1px;background:{{ d.link }}"></span>
+                      {{ d.dot }}
+                    </span>
+                  </span>
+                </sc-for>
+              </span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+                <span style="font-size:30px;line-height:.9;font-weight:200;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:{{ h.hc }};text-shadow:0 0 18px {{ h.tileGlow }}">{{ h.run }}</span>
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#8d919b">{{ h.runUnit }}</span>
+              </span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ h.isReorder }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:-8px;padding-bottom:14px">
+              <button type="button" onClick="{{ h.onUp }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#eceef2;opacity:{{ h.upOpacity }};background:#1b1d22;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">{{ I.arrowUp }}</button>
+              <button type="button" onClick="{{ h.onDown }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#eceef2;opacity:{{ h.downOpacity }};background:#1b1d22;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)">{{ I.arrowDown }}</button>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ h.notReorder }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px 12px;border-top:1px solid rgba(255,255,255,.05);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#b9c0cc">
+            <span style="display:flex;align-items:center;gap:7px;min-width:0;overflow:hidden;white-space:nowrap"><span style="color:#8d919b;display:flex">{{ I.repeat }}</span>{{ h.chip }}</span>
+            <span style="display:flex;align-items:center;gap:5px;flex-shrink:0;color:{{ h.remColor }}">{{ h.remIcon }}{{ h.reminderText }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ h.canGrip }}" hint-placeholder-val="{{ true }}">
+          <button type="button" aria-label="Reorder habits" onClick="{{ startReorder }}" style="all:unset;cursor:pointer;position:absolute;top:10px;right:8px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#6e727b" style-hover="color:#eceef2">{{ I.grip }}</button>
+        </sc-if>
+      </li>
+    </sc-for>
+  </ul>
+</section>
+</sc-if>
+
+<!-- HISTORY -->
+<sc-if value="{{ isHistory }}" hint-placeholder-val="{{ false }}">
+<section style="display:flex;flex-direction:column;gap:20px">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">294 days logged</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">History</h1>
+    </div>
+    <span style="position:relative;display:flex;align-items:center">
+      <select aria-label="Habit" value="{{ filterVal }}" onChange="{{ onFilter }}" style="appearance:none;-webkit-appearance:none;field-sizing:content;height:38px;max-width:170px;border-radius:999px;border:1px solid #27292e;background:linear-gradient(180deg,#17191e,#0f1013);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);padding:0 34px 0 15px;font:inherit;font-size:14px;color:#d6dae2;cursor:pointer;outline:none">
+        <sc-for list="{{ filterOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.value }}">{{ o.label }}</option></sc-for>
+      </select>
+      <span style="position:absolute;right:13px;pointer-events:none;display:flex;color:#8d919b">{{ I.chevDown }}</span>
+    </span>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:14px;animation:o2-rise .6s .06s cubic-bezier(.2,.8,.2,1) both">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <button type="button" aria-label="Previous month" onClick="{{ prevMonth }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:16px;border:1px solid transparent;background:linear-gradient(180deg,#17191e,#0f1013) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.03)) border-box;display:flex;align-items:center;justify-content:center;color:{{ prevColor }}" style-active="transform:scale(.94)">{{ I.chevLeft }}</button>
+      <div style="text-align:center">
+        <h2 style="margin:0;font-size:21px;font-weight:500;letter-spacing:-.015em">{{ monthTitle }}</h2>
+        <p style="margin:5px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b"><span style="color:#d4ff3a">{{ monthRate }}</span> · {{ monthFull }}</p>
+      </div>
+      <button type="button" aria-label="Next month" onClick="{{ nextMonth }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:16px;border:1px solid transparent;background:linear-gradient(180deg,#17191e,#0f1013) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.03)) border-box;display:flex;align-items:center;justify-content:center;color:{{ nextColor }}" style-active="transform:scale(.94)">{{ I.chevRight }}</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;color:#6e727b">
+      <span>M</span><span>T</span><span style="color:#d4ff3a">W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+    </div>
+    <div style="display:flex;flex-direction:column;margin-top:-6px">
+      <sc-for list="{{ calWeeks }}" as="w" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);border-radius:999px;background:{{ w.band }};box-shadow:{{ w.bandRing }}">
+          <sc-for list="{{ w.cells }}" as="c" hint-placeholder-count="7">
+            <button type="button" onClick="{{ c.onClick }}" style="all:unset;position:relative;height:48px;display:flex;align-items:center;justify-content:center;cursor:{{ c.cursor }};font-variant-numeric:tabular-nums;transform:scale({{ c.scale }});transition:transform .25s cubic-bezier(.3,1.5,.5,1)">
+              {{ c.ring }}
+              <span style="position:relative;font-size:15.5px;font-weight:{{ c.weight }};color:{{ c.color }}">{{ c.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section style="position:relative;display:flex;flex-direction:column;gap:14px;border-radius:26px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;padding:16px;animation:o2-rise .6s .12s cubic-bezier(.2,.8,.2,1) both">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px">
+      <div>
+        <h2 style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">{{ dayTitle }}</h2>
+        <p style="margin:6px 0 0;font-size:15px;color:#b9c0cc">{{ dayVerdict }}</p>
+      </div>
+      <p style="margin:0;font-size:34px;line-height:.9;font-weight:200;letter-spacing:-.03em;font-variant-numeric:tabular-nums">{{ dDone }}<span style="font-size:17px;color:#6e727b">/{{ dExp }}</span></p>
+    </div>
+    <div style="display:flex;gap:4px">
+      <sc-for list="{{ daySegs }}" as="g" hint-placeholder-count="5"><span style="flex:1;height:5px;border-radius:3px;background:{{ g.bg }};box-shadow:{{ g.glow }};transition:background .3s"></span></sc-for>
+    </div>
+    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:9px 8px">
+      <sc-for list="{{ dayChips }}" as="c" hint-placeholder-count="5">
+        <li>
+          <button type="button" onClick="{{ c.onClick }}" style="all:unset;cursor:pointer;box-sizing:border-box;height:34px;display:flex;align-items:center;gap:6px;border-radius:999px;border:1px {{ c.borderStyle }} {{ c.borderColor }};background:{{ c.bg }};box-shadow:{{ c.shadow }};padding:0 14px 0 {{ c.padL }};font-size:15px;font-weight:{{ c.weight }};color:{{ c.color }};text-decoration:{{ c.deco }};transition:all .25s" style-active="transform:scale(.95)">
+            <sc-if value="{{ c.showIcon }}" hint-placeholder-val="{{ false }}">{{ c.icon }}</sc-if>{{ c.name }}
+          </button>
+        </li>
+      </sc-for>
+    </ul>
+    <sc-if value="{{ hasDayNotes }}" hint-placeholder-val="{{ false }}">
+      <ul style="list-style:none;margin:0;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;gap:4px;font-size:14px;color:#8d919b">
+        <sc-for list="{{ dayNotes }}" as="n" hint-placeholder-count="1"><li><span style="color:#b9c0cc">{{ n.name }}:</span> <span style="font-style:italic">“{{ n.note }}”</span></li></sc-for>
+      </ul>
+    </sc-if>
+    <sc-if value="{{ dayHintShow }}" hint-placeholder-val="{{ false }}">
+      <p style="margin:0;display:flex;align-items:center;gap:7px;font-size:13px;color:#6e727b">{{ I.info }}{{ dayHint }}</p>
+    </sc-if>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px;padding:0 4px;animation:o2-rise .6s .18s cubic-bezier(.2,.8,.2,1) both">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+      <h2 style="margin:0;font-size:21px;font-weight:500;letter-spacing:-.015em">A year in orbit</h2>
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Longest run <span style="color:#eceef2">31d</span></p>
+    </div>
+    <div style="position:relative">
+      <div onMouseLeave="{{ endHeat }}" style="display:grid;grid-template-columns:repeat(53,1fr);grid-template-rows:repeat(7,auto);grid-auto-flow:column;gap:1.4px">
+        <sc-for list="{{ heat }}" as="x" hint-placeholder-count="0"><span onMouseEnter="{{ x.onEnter }}" style="aspect-ratio:1;border-radius:50%;background:{{ x.bg }};box-shadow:{{ x.glow }};transform:scale({{ x.scale }});transition:transform .15s"></span></sc-for>
+      </div>
+      <sc-if value="{{ hasHeatTip }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:calc(100% + 8px);left:{{ heatTipLeft }};transform:translateX(-50%);white-space:nowrap;pointer-events:none;padding:6px 10px;border-radius:10px;background:rgba(27,29,34,.95);border:1px solid #2c2f35;box-shadow:0 10px 24px rgba(0,0,0,.5);font-size:12px;color:#eceef2;animation:o2-fade .12s"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:#8d919b;margin-right:6px">{{ heatTipDate }}</span>{{ heatTipText }}</div>
+      </sc-if>
+    </div>
+    <div style="position:relative;height:12px">
+      <sc-for list="{{ heatMonths }}" as="m" hint-placeholder-count="7"><span style="position:absolute;top:0;left:{{ m.left }};right:{{ m.right }};font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;line-height:1;letter-spacing:.04em;color:#6e727b">{{ m.label }}</span></sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px">
+      <sc-for list="{{ heatStats }}" as="k" hint-placeholder-count="3">
+        <div style="border-radius:16px;border:1px solid #1a1b1f;background:rgba(15,16,19,.6);padding:10px 12px">
+          <p style="margin:0;font-size:20px;font-weight:300;font-variant-numeric:tabular-nums;color:{{ k.color }}">{{ k.value }}</p>
+          <p style="margin:3px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">{{ k.label }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</section>
+</sc-if>
+
+<!-- STATS -->
+<sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
+<section style="display:flex;flex-direction:column;gap:20px">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Trajectory</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">Stats</h1>
+    </div>
+    <div role="radiogroup" aria-label="Time range" style="position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:48px;gap:4px;padding:4px;border-radius:16px;border:1px solid #27292e;background:rgba(236,238,242,.05);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)">
+      <span aria-hidden="true" style="position:absolute;top:4px;left:4px;width:48px;height:36px;border-radius:12px;background:radial-gradient(120% 120% at 30% 20%,#f2ffb8,#d4ff3a 55%,#b2d61a);box-shadow:0 6px 20px -6px rgba(212,255,58,.7),inset 0 1px 0 rgba(255,255,255,.6);transform:translateX({{ winX }});transition:transform .4s cubic-bezier(.4,1.4,.5,1)"></span>
+      <sc-for list="{{ winOpts }}" as="o" hint-placeholder-count="3">
+        <button type="button" onClick="{{ o.onClick }}" style="all:unset;position:relative;cursor:pointer;height:36px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:500;color:{{ o.color }};transition:color .25s">{{ o.label }}</button>
+      </sc-for>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:8px;padding:0 20px 0 4px;animation:o2-rise .6s .06s cubic-bezier(.2,.8,.2,1) both">
+    <p style="margin:0;display:flex;align-items:flex-start;font-size:96px;line-height:.95;font-weight:200;letter-spacing:-.05em;font-variant-numeric:tabular-nums">
+      <span style="background:linear-gradient(180deg,#ffffff 35%,#8f96a2);-webkit-background-clip:text;background-clip:text;color:transparent">{{ rate }}</span>
+      <span style="margin:12px 0 0 6px;font-size:30px;font-weight:300;letter-spacing:0;color:#6e727b">%</span>
+    </p>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <p style="margin:0;font-size:15px;line-height:1.4;color:#b9c0cc">of planned check-ins kept · last {{ win }} days</p>
+      <p style="margin:0;flex-shrink:0;display:flex;align-items:center;gap:4px;border-radius:999px;background:rgba(212,255,58,.12);border:1px solid rgba(212,255,58,.25);padding:5px 11px 5px 8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#d4ff3a;box-shadow:0 0 20px -6px rgba(212,255,58,.4)">{{ I.trendUp }}{{ change }}</p>
+    </div>
+    <div onPointerMove="{{ onScrub }}" onPointerLeave="{{ endScrub }}" style="position:relative;margin-top:22px;cursor:crosshair;touch-action:none">
+      {{ trendSvg }}
+      <div style="position:absolute;left:{{ tipLeft }};top:{{ tipTop }};transform:translate({{ tipShift }},-100%);margin-top:-12px;pointer-events:none;padding:7px 10px;border-radius:12px;background:rgba(20,22,26,.92);border:1px solid #2c2f35;box-shadow:0 12px 28px rgba(0,0,0,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);white-space:nowrap;transition:left .08s linear,top .08s linear">
+        <p style="margin:0;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums">{{ tipVal }}<span style="color:#8d919b;font-weight:400">%</span></p>
+        <p style="margin:2px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:{{ tipDateColor }}">{{ tipDate }}</p>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;color:#6e727b;margin-top:6px">
+      <span>{{ trendStart }}</span><span>{{ trendMid }}</span><span style="color:#d4ff3a">TODAY</span>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;animation:o2-rise .6s .12s cubic-bezier(.2,.8,.2,1) both">
+    <div style="position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;border-radius:26px;border:1px solid transparent;background:radial-gradient(120% 80% at 0% 0%,rgba(212,255,58,.1),transparent 60%) padding-box,linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(212,255,58,.35),rgba(255,255,255,.03) 50%,rgba(255,255,255,.06)) border-box;padding:18px 16px 16px">
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Current run</p>
+      <p style="margin:0;font-size:46px;line-height:.85;font-weight:200;letter-spacing:-.04em;font-variant-numeric:tabular-nums">12<span style="margin-left:7px;font-size:17px;font-weight:400;letter-spacing:0;color:#8d919b">days</span></p>
+      <div aria-hidden="true" style="display:flex;gap:2px;margin-top:6px;height:12px;align-items:flex-end">
+        <sc-for list="{{ runTicks }}" as="k" hint-placeholder-count="31"><span style="flex:1;height:{{ k.h }};border-radius:1px;background:{{ k.bg }};box-shadow:{{ k.glow }}"></span></sc-for>
+      </div>
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;color:#8d919b">39% OF YOUR BEST</p>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:10px;border-radius:26px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;padding:18px 16px 16px">
+      <span style="position:absolute;top:16px;right:16px;color:#ffc94d;filter:drop-shadow(0 0 8px rgba(255,201,77,.45))">{{ I.trophy }}</span>
+      <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Best run</p>
+      <p style="margin:0;font-size:46px;line-height:.85;font-weight:200;letter-spacing:-.04em;font-variant-numeric:tabular-nums">31<span style="margin-left:7px;font-size:17px;font-weight:400;letter-spacing:0;color:#8d919b">days</span></p>
+      <p style="margin:6px 0 0;line-height:1.3;font-size:15px;color:#b9c0cc"><span style="color:#eceef2;font-weight:500">19 days</span> to beat it</p>
+    </div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:16px;padding:0 4px;animation:o2-rise .6s .18s cubic-bezier(.2,.8,.2,1) both">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">By orbit</h2>
+      <span style="display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.06em;color:#6e727b"><span style="width:2px;height:10px;border-radius:1px;background:rgba(236,238,242,.4)"></span>PREV {{ win }}D</span>
+    </div>
+    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px">
+      <sc-for list="{{ byOrbit }}" as="b" hint-placeholder-count="5">
+        <li style="display:flex;flex-direction:column;gap:9px">
+          <p style="margin:0;display:flex;align-items:center;justify-content:space-between;gap:12px;line-height:1.25">
+            <span style="display:flex;align-items:center;gap:10px;min-width:0"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:#4d5158">{{ b.rank }}</span><span style="font-size:15px">{{ b.emoji }}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15.5px">{{ b.label }}</span></span>
+            <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <span style="display:flex;align-items:center;gap:2px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:{{ b.deltaColor }}">{{ b.deltaIcon }}{{ b.delta }}</span>
+              <span style="font-variant-numeric:tabular-nums;font-size:16px;font-weight:500;min-width:42px;text-align:right">{{ b.rate }}<span style="color:#6e727b;font-weight:400">%</span></span>
+            </span>
+          </p>
+          <div style="position:relative;height:6px;border-radius:999px;background:rgba(236,238,242,.06)">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:{{ b.width }};border-radius:999px;background:linear-gradient(90deg,{{ b.from }},{{ b.hc }});box-shadow:0 0 14px {{ b.glow }};transition:width .6s cubic-bezier(.4,0,.2,1)"><span style="position:absolute;right:-1px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px {{ b.ring }},0 0 10px {{ b.hc }}"></span></div>
+            <span style="position:absolute;top:-4px;bottom:-4px;left:{{ b.prevLeft }};width:2px;border-radius:1px;background:rgba(236,238,242,.4);transition:left .6s"></span>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px;animation:o2-rise .6s .24s cubic-bezier(.2,.8,.2,1) both">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Streaks and weeks</h2>
+    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px">
+      <sc-for list="{{ statCards }}" as="s" hint-placeholder-count="5">
+        <li style="display:flex;flex-direction:column;gap:14px;border-radius:26px;border:1px solid transparent;background:radial-gradient(100% 70% at 0% 0%,{{ s.wash }},transparent 60%) padding-box,linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,{{ s.edge }},rgba(255,255,255,.03) 45%,rgba(255,255,255,.06)) border-box;padding:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:42px;height:42px;flex-shrink:0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;background:{{ s.tileBg }};box-shadow:inset 0 0 0 1px {{ s.tileRing }},inset 0 1px 0 rgba(255,255,255,.12)">{{ s.emoji }}</span>
+            <div style="min-width:0;flex:1">
+              <h3 style="margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px;font-weight:500;letter-spacing:-.01em">{{ s.name }}</h3>
+              <p style="margin:3px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8d919b">{{ s.sched }}</p>
+            </div>
+          </div>
+          <dl style="margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
+            <sc-for list="{{ s.stats }}" as="v" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column-reverse;gap:3px;border-radius:16px;background:rgba(7,8,11,.8);box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);padding:10px 6px">
+                <dt style="font-size:11.5px;color:#8d919b">{{ v.label }}</dt>
+                <dd style="margin:0;font-weight:600;font-variant-numeric:tabular-nums;color:{{ v.color }}">{{ v.value }}</dd>
+              </div>
+            </sc-for>
+          </dl>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:7px;font-size:13.5px"><span style="color:#8d919b">This week</span><span style="font-weight:500;font-variant-numeric:tabular-nums">{{ s.weekText }}</span></div>
+            <div style="display:flex;gap:3px">
+              <sc-for list="{{ s.weekSegs }}" as="g" hint-placeholder-count="7"><span style="flex:1;height:8px;border-radius:3px;background:{{ g.bg }};box-shadow:{{ g.glow }}"></span></sc-for>
+            </div>
+            <sc-if value="{{ s.atRisk }}" hint-placeholder-val="{{ false }}">
+              <p style="margin:12px 0 0;display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:14px;background:rgba(255,201,77,.07);border:1px solid rgba(255,201,77,.2);font-size:13.5px;line-height:1.35;color:#ffc94d">{{ I.alert }}Missed last time. Don’t miss twice and the streak carries on.</p>
+            </sc-if>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+</section>
+</sc-if>
+
+<!-- REVIEW -->
+<sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+<section style="display:flex;flex-direction:column;gap:18px">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">{{ reviewEyebrow }}</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">Weekly review</h1>
+    </div>
+    <span style="position:relative;display:flex;align-items:center">
+      <select aria-label="Week" value="{{ reviewWeek }}" onChange="{{ onReviewWeek }}" style="appearance:none;-webkit-appearance:none;field-sizing:content;height:38px;border-radius:999px;border:1px solid #27292e;background:linear-gradient(180deg,#17191e,#0f1013);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);padding:0 34px 0 15px;font:inherit;font-size:14px;color:#d6dae2;cursor:pointer;outline:none">
+        <option value="this">This week</option>
+        <option value="last">Last week</option>
+      </select>
+      <span style="position:absolute;right:13px;pointer-events:none;display:flex;color:#8d919b">{{ I.chevDown }}</span>
+    </span>
+  </header>
+
+  <div style="position:relative;border-radius:26px;padding:1px;overflow:hidden;box-shadow:0 24px 50px -28px rgba(212,255,58,.45);animation:o2-rise .6s .05s cubic-bezier(.2,.8,.2,1) both">
+    <span aria-hidden="true" style="position:absolute;inset:-80%;background:conic-gradient(from 0deg,rgba(212,255,58,.08) 0 55%,rgba(212,255,58,.9) 78%,rgba(212,255,58,.08) 100%);animation:o2-spin 7s linear infinite"></span>
+    <div style="position:relative;overflow:hidden;border-radius:25px;background:radial-gradient(130% 120% at 0% 0%,rgba(212,255,58,.16),rgba(212,255,58,.02) 60%),#0c0d0a;padding:20px 20px 22px">
+      <span aria-hidden="true" style="position:absolute;right:12px;top:-30px;font-family:Georgia,'Times New Roman',serif;font-size:170px;line-height:1;color:rgba(212,255,58,.08)">”</span>
+      <p style="position:relative;margin:0;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#d4ff3a">{{ I.flag }}{{ promiseLabel }}</p>
+      <p style="position:relative;margin:12px 0 0;font-size:23px;line-height:1.25;letter-spacing:-.02em;font-weight:400;text-wrap:pretty">“{{ promise }}”</p>
+    </div>
+  </div>
+
+  <section style="display:flex;align-items:center;gap:18px;border-radius:26px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;padding:16px 18px;animation:o2-rise .6s .1s cubic-bezier(.2,.8,.2,1) both">
+    <div style="flex-shrink:0">
+      <p style="margin:0;font-size:40px;line-height:1;font-weight:200;letter-spacing:-.04em;font-variant-numeric:tabular-nums">{{ ciDone }}<span style="font-size:20px;letter-spacing:0;color:#6e727b">/{{ ciExpected }}</span></p>
+      <p style="margin:8px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Check-ins</p>
+      <p style="margin:6px 0 0;display:inline-flex;padding:3px 7px;border-radius:6px;background:rgba(212,255,58,.12);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:#d4ff3a">{{ ciPct }}% KEPT</p>
+    </div>
+    <div style="flex:1;display:flex;align-items:flex-end;justify-content:space-between;gap:4px">
+      <sc-for list="{{ ciDays }}" as="d" hint-placeholder-count="7">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:8.5px;color:#6e727b;height:10px">{{ d.num }}</span>
+          <div style="height:52px;display:flex;align-items:flex-end">
+            <div style="width:15px;border-radius:8px;height:{{ d.h }};background:{{ d.bg }};box-shadow:{{ d.glow }};transition:height .5s cubic-bezier(.3,1.3,.5,1),background .3s"></div>
+          </div>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:{{ d.lc }};font-weight:{{ d.lw }}">{{ d.letter }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:10px;animation:o2-rise .6s .15s cubic-bezier(.2,.8,.2,1) both">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Identity votes</h2>
+    <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      <sc-for list="{{ votes }}" as="v" hint-placeholder-count="5">
+        <li style="display:flex;flex-direction:column;justify-content:space-between;gap:14px;border-radius:22px;border:1px solid transparent;background:radial-gradient(120% 100% at 0% 0%,{{ v.wash }},transparent 60%) padding-box,linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,{{ v.edge }},rgba(255,255,255,.03) 50%) border-box;padding:14px">
+          <p style="margin:0;font-size:14px;line-height:1.35;text-wrap:pretty">{{ v.identity }}</p>
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:6px">
+            <span style="display:flex;align-items:baseline;gap:5px"><span style="font-size:26px;line-height:.9;font-weight:200;font-variant-numeric:tabular-nums;color:{{ v.hc }};text-shadow:0 0 14px {{ v.glow }}">{{ v.count }}</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:#8d919b">{{ v.unit }}</span></span>
+            <span style="display:flex;gap:3px;padding-bottom:2px"><sc-for list="{{ v.pips }}" as="p" hint-placeholder-count="7"><span style="width:5px;height:{{ p.h }};border-radius:3px;background:{{ p.bg }};box-shadow:{{ p.glow }}"></span></sc-for></span>
+          </div>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+  <form onSubmit="{{ onReviewSubmit }}" style="display:flex;flex-direction:column;gap:12px;animation:o2-rise .6s .2s cubic-bezier(.2,.8,.2,1) both">
+    <sc-for list="{{ reviewFields }}" as="f" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:7px;border-radius:24px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,{{ f.edge }} border-box;box-shadow:{{ f.shadow }};padding:14px 16px;transition:box-shadow .25s">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label style="display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:{{ f.labelColor }};transition:color .2s"><span style="display:flex">{{ f.icon }}</span>{{ f.label }}</label>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;color:#4d5158;opacity:{{ f.countOpacity }};transition:opacity .2s">{{ f.count }}</span>
+        </div>
+        <textarea value="{{ f.value }}" onChange="{{ f.onChange }}" onFocus="{{ f.onFocus }}" onBlur="{{ f.onBlur }}" rows="{{ f.rows }}" placeholder="{{ f.placeholder }}" style="width:100%;resize:none;border:0;padding:0;background:transparent;font:inherit;font-size:16px;line-height:1.4;color:#d6dae2;outline:none"></textarea>
+      </div>
+    </sc-for>
+    <p style="margin:2px 0 0;min-height:20px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;color:#d4ff3a">{{ savedNote }}</p>
+    <button type="submit" style="all:unset;box-sizing:border-box;position:{{ ctaPos }};bottom:104px;z-index:2;overflow:hidden;min-height:56px;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:9px;font-size:17.5px;font-weight:600;letter-spacing:-.01em;cursor:{{ ctaCursor }};background:{{ ctaBg }};color:{{ ctaColor }};box-shadow:{{ ctaShadow }};transition:all .3s" style-active="transform:scale(.98)">
+      <span aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(100deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);background-size:250% 100%;opacity:{{ ctaShineOp }};animation:o2-shine 2.6s ease-in-out infinite"></span>
+      <span style="position:relative;display:flex;align-items:center;gap:9px">{{ ctaIcon }}{{ ctaLabel }}</span>
+    </button>
+  </form>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Past reviews</h2>
+    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ pastReviews }}" as="r" hint-placeholder-count="1">
+        <li style="border-radius:22px;border:1px solid #1a1b1f;background:#0e0f12;overflow:hidden">
+          <button type="button" onClick="{{ r.onToggle }}" style="all:unset;box-sizing:border-box;width:100%;cursor:pointer;min-height:58px;display:flex;align-items:center;gap:12px;padding:12px 16px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;color:#d4ff3a;padding:4px 8px;border-radius:8px;background:rgba(212,255,58,.08);border:1px solid rgba(212,255,58,.18)">W{{ r.week }}</span>
+            <span style="flex:1;font-weight:500">{{ r.range }}</span>
+            <span style="display:flex;color:#8d919b;transform:rotate({{ r.rot }});transition:transform .3s cubic-bezier(.3,1.4,.5,1)">{{ I.chevDown }}</span>
+          </button>
+          <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+            <dl style="margin:0;display:flex;flex-direction:column;gap:12px;padding:2px 16px 16px;animation:o2-rise .3s">
+              <sc-for list="{{ r.rows }}" as="x" hint-placeholder-count="3">
+                <div style="padding-left:12px;border-left:2px solid {{ x.c }}"><dt style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">{{ x.label }}</dt><dd style="margin:4px 0 0;line-height:1.4;color:#d6dae2">{{ x.value }}</dd></div>
+              </sc-for>
+            </dl>
+          </sc-if>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+</section>
+</sc-if>
+
+<!-- SETTINGS -->
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<section style="display:flex;flex-direction:column;gap:20px">
+  <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:70px 4px 0;animation:o2-rise .6s cubic-bezier(.2,.8,.2,1) both">
+    <div style="min-width:0">
+      <p style="margin:0 0 10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;line-height:1.2;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Mission control</p>
+      <h1 style="margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:400;background:linear-gradient(180deg,#ffffff 30%,#9ea4b0);-webkit-background-clip:text;background-clip:text;color:transparent">Settings</h1>
+    </div>
+  </header>
+
+  <div style="position:relative;overflow:hidden;border-radius:26px;border:1px solid transparent;background:radial-gradient(90% 120% at 100% 0%,rgba(212,255,58,.12),transparent 55%) padding-box,linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 50%,rgba(212,255,58,.2)) border-box;animation:o2-rise .6s .05s cubic-bezier(.2,.8,.2,1) both">
+    <div style="display:flex;align-items:center;gap:14px;padding:16px">
+      <img src="public/pwa-512x512.png" alt="" style="width:52px;height:52px;border-radius:14px;display:block;box-shadow:0 10px 24px -8px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.1)">
+      <div style="flex:1;min-width:0">
+        <p style="margin:0;font-size:17px;font-weight:500;letter-spacing:-.01em">Habit Tracker</p>
+        <p style="margin:3px 0 0;display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.08em;color:#8d919b"><span style="width:6px;height:6px;border-radius:50%;background:#3be8c4;box-shadow:0 0 6px #3be8c4"></span>V1.0 · OFFLINE READY</p>
+      </div>
+      <span style="display:flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;border:1px solid rgba(212,255,58,.25);background:rgba(212,255,58,.08);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;color:#d4ff3a">{{ I.shield }}LOCAL</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,255,255,.05)">
+      <div style="padding:12px 16px"><p style="margin:0;font-size:22px;font-weight:200;font-variant-numeric:tabular-nums">5</p><p style="margin:3px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Habits</p></div>
+      <div style="padding:12px 16px;border-left:1px solid rgba(255,255,255,.05)"><p style="margin:0;font-size:22px;font-weight:200;font-variant-numeric:tabular-nums">294</p><p style="margin:3px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Days logged</p></div>
+      <div style="padding:12px 16px;border-left:1px solid rgba(255,255,255,.05)"><p style="margin:0;font-size:22px;font-weight:200;font-variant-numeric:tabular-nums">2</p><p style="margin:3px 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Reviews</p></div>
+    </div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:12px;animation:o2-rise .6s .1s cubic-bezier(.2,.8,.2,1) both">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Appearance</h2>
+    <div role="radiogroup" aria-label="Theme" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="3">
+        <button type="button" onClick="{{ o.onClick }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:9px">
+          <span style="position:relative;width:100%;aspect-ratio:.82;box-sizing:border-box;border-radius:18px;overflow:hidden;background:{{ o.preview }};box-shadow:{{ o.ring }};transition:box-shadow .25s,transform .25s;transform:scale({{ o.scale }})">
+            <span style="position:absolute;left:12px;right:12px;top:14px;height:5px;border-radius:3px;background:{{ o.line }}"></span>
+            <span style="position:absolute;left:12px;width:40%;top:24px;height:5px;border-radius:3px;background:{{ o.line2 }}"></span>
+            <span style="position:absolute;left:50%;top:44%;width:34px;height:34px;margin-left:-17px;border-radius:50%;border:3px solid #d4ff3a;border-right-color:{{ o.line2 }};border-bottom-color:{{ o.line2 }}"></span>
+            <span style="position:absolute;left:12px;right:12px;bottom:12px;height:12px;border-radius:6px;background:{{ o.line }}"></span>
+            <sc-if value="{{ o.sel }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:7px;right:7px;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#d4ff3a;color:#0b0d04;animation:o2-pop .35s">{{ I.checkXs }}</span></sc-if>
+          </span>
+          <span style="font-size:14px;font-weight:{{ o.weight }};color:{{ o.color }}">{{ o.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px;animation:o2-rise .6s .15s cubic-bezier(.2,.8,.2,1) both">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Reminders</h2>
+    <div style="display:flex;flex-direction:column;border-radius:26px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:14px;padding:14px 16px">
+        <span style="width:36px;height:36px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:radial-gradient(100% 100% at 30% 20%,rgba(212,255,58,.25),rgba(212,255,58,.06));box-shadow:inset 0 0 0 1px rgba(212,255,58,.25);color:#d4ff3a">{{ I.bell }}</span>
+        <div style="min-width:0;flex:1">
+          <p style="margin:0;font-size:16px">Habit reminders</p>
+          <p style="margin:2px 0 0;font-size:14px;line-height:1.4;color:#9aa0ab">{{ remDetail }}</p>
+        </div>
+        <button type="button" role="switch" aria-label="Habit reminders" onClick="{{ toggleRem }}" style="all:unset;cursor:pointer;box-sizing:border-box;width:54px;height:32px;flex-shrink:0;border-radius:999px;padding:3px;display:flex;align-items:center;background:{{ swBg }};box-shadow:{{ swGlow }};transition:all .3s">
+          <span style="width:26px;height:26px;border-radius:50%;background:{{ swKnob }};transform:translateX({{ swX }});box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15);transition:transform .35s cubic-bezier(.4,1.5,.5,1),background .25s"></span>
+        </button>
+      </div>
+      <sc-if value="{{ remOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,.05)">
+          <sc-for list="{{ remChips }}" as="r" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 16px 11px 66px">
+              <span style="font-size:15px">{{ r.emoji }}</span>
+              <span style="flex:1;font-size:15px;color:#d6dae2">{{ r.name }}</span>
+              <span style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:10px;background:#17191d;box-shadow:inset 0 0 0 1px #24262b;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#eceef2;font-variant-numeric:tabular-nums"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.hc }};box-shadow:0 0 6px {{ r.hc }}"></span>{{ r.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button type="button" onClick="{{ sendTest }}" style="all:unset;box-sizing:border-box;width:100%;cursor:pointer;min-height:56px;display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid rgba(255,255,255,.05)" style-hover="background:rgba(27,29,34,.5)">
+          <span style="width:36px;height:36px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#22252b,#191b20);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:#d4ff3a">{{ I.send }}</span>
+          <span style="flex:1;font-size:16px">Send a test</span>
+          <span style="display:flex;color:#4d5158">{{ I.chevRightSm }}</span>
+        </button>
+      </sc-if>
+    </div>
+    <sc-if value="{{ hasRemMsg }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:0 4px;display:flex;align-items:center;gap:6px;font-size:14px;color:#d4ff3a;animation:o2-rise .3s">{{ I.checkSm }}{{ remMsg }}</p></sc-if>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px;animation:o2-rise .6s .2s cubic-bezier(.2,.8,.2,1) both">
+    <h2 style="margin:0;padding:0 4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:400;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Your data</h2>
+    <div style="display:flex;flex-direction:column;border-radius:26px;border:1px solid transparent;background:linear-gradient(180deg,#121317,#0d0e11) padding-box,linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.02) 50%,rgba(255,255,255,.06)) border-box;overflow:hidden">
+      <sc-for list="{{ dataRows }}" as="r" hint-placeholder-count="3">
+        <button type="button" onClick="{{ r.onClick }}" style="all:unset;box-sizing:border-box;width:100%;cursor:pointer;min-height:60px;display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid {{ r.divider }}" style-hover="background:rgba(27,29,34,.5)">
+          <span style="width:36px;height:36px;flex-shrink:0;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#22252b,#191b20);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:#d4ff3a">{{ r.icon }}</span>
+          <span style="flex:1;min-width:0"><span style="display:block;font-size:16px">{{ r.label }}</span><span style="display:block;margin-top:2px;font-size:13px;color:#6e727b">{{ r.sub }}</span></span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.06em;color:#8d919b;padding:3px 7px;border-radius:6px;border:1px solid #27292e">{{ r.tag }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ hasDataMsg }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:0 4px;display:flex;align-items:center;gap:6px;font-size:14px;color:#d4ff3a;animation:o2-rise .3s">{{ I.checkSm }}{{ dataMsg }}</p></sc-if>
+  </section>
+
+  <section style="display:flex;flex-direction:column;align-items:center;gap:12px">
+    <sc-if value="{{ confirmReset }}" hint-placeholder-val="{{ false }}">
+      <div style="width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;border-radius:24px;border:1px solid rgba(255,107,107,.3);background:radial-gradient(120% 100% at 0% 0%,rgba(255,107,107,.12),transparent 60%),#0e0f12;padding:16px;animation:o2-rise .3s">
+        <p style="margin:0;line-height:1.4">Delete all habits, check-ins and reviews on this device? Export a backup first if you might want them back.</p>
+        <div style="display:flex;gap:8px">
+          <button type="button" onClick="{{ cancelReset }}" style="all:unset;cursor:pointer;flex:1;min-height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#b9c0cc;background:#1b1d22">Cancel</button>
+          <button type="button" onClick="{{ doReset }}" style="all:unset;cursor:pointer;flex:1;min-height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#0b0d04;background:#ff6b6b;box-shadow:0 10px 24px -10px rgba(255,107,107,.7)">Delete everything</button>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ notConfirmReset }}" hint-placeholder-val="{{ true }}">
+      <button type="button" onClick="{{ askReset }}" style="all:unset;cursor:pointer;min-height:44px;padding:0 18px;border-radius:16px;display:flex;align-items:center;gap:8px;font-size:16px;color:#ff6b6b" style-hover="background:rgba(255,107,107,.08)">{{ I.trash }}Delete all data</button>
+    </sc-if>
+    <sc-if value="{{ hasResetMsg }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:14px;color:#d4ff3a">{{ resetMsg }}</p></sc-if>
+  </section>
+
+  <footer style="text-align:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#4d5158;line-height:1.7;padding-bottom:4px">Habit Tracker 1.0 · Your data stays on this device</footer>
+</section>
+</sc-if>
+
+</div>
+</main>
+
+<div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:64px;z-index:4;pointer-events:none;background:linear-gradient(180deg,#07080b 30%,rgba(7,8,11,0))"></div>
+<div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:54px;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:4px 30px 0 36px;pointer-events:none">
+  <span style="font-size:16px;font-weight:600;letter-spacing:-.01em">9:41</span>
+  <span style="position:absolute;left:50%;top:11px;width:124px;height:36px;margin-left:-62px;border-radius:20px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)"></span>
+  <span style="display:flex;align-items:center;gap:6px">{{ I.signal }}{{ I.wifi }}{{ I.battery }}</span>
+</div>
+<div aria-hidden="true" style="position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-image:{{ noise }};background-size:160px 160px"></div>
+
+<nav aria-label="Main" style="position:absolute;left:0;right:0;bottom:0;z-index:8;padding:30px 20px 26px;background:linear-gradient(180deg,rgba(7,8,11,0),rgba(7,8,11,.85) 45%);pointer-events:none">
+  <div style="position:relative;pointer-events:auto;border-radius:999px;padding:6px;border:1px solid transparent;background:linear-gradient(180deg,rgba(28,31,37,.78),rgba(16,18,22,.82)) padding-box,linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.04)) border-box;backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);box-shadow:0 20px 40px -12px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.06)">
+    <span aria-hidden="true" style="position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 6);transform:translateX({{ tabX }});transition:transform .45s cubic-bezier(.4,1.35,.5,1)">
+      <span style="position:absolute;inset:0 3px;border-radius:18px;background:radial-gradient(120% 120% at 30% 15%,#f2ffb8,#d4ff3a 50%,#b6da1c);box-shadow:0 8px 24px -6px rgba(212,255,58,.65),inset 0 1px 0 rgba(255,255,255,.65),inset 0 -2px 4px rgba(0,0,0,.1)"></span>
+    </span>
+    <ul style="position:relative;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,1fr)">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+        <li style="display:flex;justify-content:center">
+          <button type="button" aria-label="{{ t.label }}" onClick="{{ t.onClick }}" style="all:unset;cursor:pointer;width:100%;height:50px;display:flex;align-items:center;justify-content:center;color:{{ t.color }};transition:color .3s" style-active="transform:scale(.9)">{{ t.icon }}</button>
+        </li>
+      </sc-for>
+    </ul>
+  </div>
+  <span style="display:block;margin:10px auto 0;width:134px;height:5px;border-radius:3px;background:rgba(236,238,242,.85)"></span>
+</nav>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end">
+    <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(5,6,8,.66);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:o2-fade .25s"></div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:16px;border-radius:32px 32px 0 0;border:1px solid transparent;border-bottom:0;background:radial-gradient(100% 60% at 50% 0%,{{ sh.wash }},transparent 70%) padding-box,linear-gradient(180deg,#16181c,#0f1013 40%) padding-box,linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.02)) border-box;padding:10px 16px 34px;box-shadow:0 -30px 80px rgba(0,0,0,.7);animation:o2-sheet .38s cubic-bezier(.2,.95,.25,1)">
+      <span style="align-self:center;width:38px;height:5px;border-radius:3px;background:#2c2f35"></span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:48px;height:48px;flex-shrink:0;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;background:{{ sh.tileBg }};box-shadow:inset 0 0 0 1px {{ sh.tileRing }},inset 0 1px 0 rgba(255,255,255,.12)">{{ sh.emoji }}</span>
+        <div style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:19px;font-weight:600;letter-spacing:-.015em">{{ sh.name }}</h2>
+          <p style="margin:3px 0 0;font-size:14px;color:rgba(185,192,204,.8)">“{{ sh.identity }}”</p>
+        </div>
+        <button type="button" aria-label="Close" onClick="{{ closeSheet }}" style="all:unset;cursor:pointer;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#b9c0cc;background:#1b1d22">{{ I.x }}</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ sh.options }}" as="o" hint-placeholder-count="3">
+          <button type="button" onClick="{{ o.onClick }}" style="all:unset;box-sizing:border-box;cursor:pointer;min-height:64px;display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:20px;border:1px solid {{ o.border }};background:{{ o.bg }};box-shadow:{{ o.shadow }};transition:all .2s;animation:o2-rise .4s {{ o.delay }} cubic-bezier(.2,.8,.2,1) both" style-active="transform:scale(.98)">
+            {{ o.mark }}
+            <span style="min-width:0;flex:1">
+              <span style="display:block;font-weight:500">{{ o.label }}</span>
+              <span style="display:block;margin-top:2px;font-size:13.5px;color:#8d919b">{{ o.desc }}</span>
+            </span>
+            <sc-if value="{{ o.current }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;color:#d4ff3a;padding:3px 7px;border-radius:6px;background:rgba(212,255,58,.1)">NOW</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+      <div style="border-radius:18px;border:1px solid #1f2023;background:#0a0b0d;padding:12px 14px">
+        <label style="display:block;margin-bottom:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8d919b">Note <span style="color:#4d5158">· optional</span></label>
+        <textarea value="{{ sh.note }}" onChange="{{ sh.onNote }}" rows="2" placeholder="How did it go?" style="box-sizing:border-box;width:100%;resize:none;border:0;padding:0;background:transparent;font:inherit;font-size:16px;line-height:1.4;color:#eceef2;outline:none"></textarea>
+      </div>
+      <sc-if value="{{ sh.hasCompletion }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:8px">
+          <button type="button" onClick="{{ sh.onClear }}" style="all:unset;cursor:pointer;flex:1;min-height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#8d919b;background:#15171b">Clear today</button>
+          <button type="button" onClick="{{ sh.onSave }}" style="all:unset;cursor:pointer;flex:1;min-height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#0b0d04;background:#d4ff3a">Save note</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:410,&quot;height&quot;:864},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;habits&quot;,&quot;history&quot;,&quot;stats&quot;,&quot;review&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const C = { canvas:'#07080b', surface:'#0f1013', raised:'#1b1d22', line:'#1f2023', lineStrong:'#27292e', ink:'#eceef2', soft:'#b9c0cc', muted:'#8d919b', accent:'#d4ff3a', accentInk:'#0b0d04', danger:'#ff6b6b' };
+const HC = { emerald:'#8be45f', teal:'#3be8c4', sky:'#5cc8ff', indigo:'#8c9cff', violet:'#b79cff', rose:'#ff6fa7', orange:'#ff8a4c', amber:'#ffc94d' };
+const al = (hex, a) => hex + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0');
+const e = (...args) => React.createElement(...args);
+const rnd = (seed) => { const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+const NOISE = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")`;
+
+const HABITS = {
+  push:   { id:'push', name:'100 pushups', short:'Pushups', emoji:'💪', color:'orange', identity:'I move my body every single day.', min:'20', sched:'daily', run:1, best:9, reminder:'07:00', past:['full','full'], rates:{7:86,30:74,90:71}, prev:{7:80,30:70,90:69} },
+  claude: { id:'claude', name:'Building with Claude', short:'Claude', emoji:'✨', color:'violet', identity:'I am a builder who ships daily.', min:'15m', sched:'daily', run:1, best:14, past:['full','missed'], rates:{7:71,30:68,90:63}, prev:{7:79,30:61,90:60}, risk:true },
+  read:   { id:'read', name:'Read 20 pages', short:'Read', emoji:'📚', color:'sky', identity:'I am a reader.', min:'1 pg', sched:'daily', run:6, best:31, reminder:'21:30', past:['full','full'], rates:{7:100,30:87,90:84}, prev:{7:86,30:80,90:79} },
+  water:  { id:'water', name:'Drink 8 glasses of water', short:'Water', emoji:'💧', color:'teal', identity:'I take care of my body.', min:'4', sched:'daily', run:12, best:24, past:['full','full'], rates:{7:100,30:98,90:93}, prev:{7:93,30:90,90:88} },
+  med:    { id:'med', name:'Meditate 10 min', short:'Meditate', emoji:'🧘', color:'rose', identity:'I stay calm under pressure.', sched:'weekly', times:3, run:2, best:6, past:['full','off'], rates:{7:67,30:69,90:66}, prev:{7:67,30:64,90:62} },
+};
+const IDS = ['push','claude','read','water','med'];
+const ARCHIVED = [
+  { id:'walk', name:'Walk', emoji:'🚶', color:'emerald', identity:'I am someone who moves every day', min:'To the corner', sched:'daily', run:0 },
+  { id:'journal', name:'Journal', emoji:'✍️', color:'amber', identity:'I am someone who reflects', min:'One sentence', sched:'daily', run:0 },
+];
+const OCT = [0,5,4,4,3,5,5,4,4,4,3,4,4,3,5,4,4,3,5,5,4];
+const MONTHS = { 8:{ name:'September 2026', short:'Sep', days:30, offset:1 }, 9:{ name:'October 2026', short:'Oct', days:31, offset:3 } };
+const WD = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const LETTERS = ['M','T','W','T','F','S','S'];
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const OVERALL = { 7:{ rate:86, change:'+4 pts' }, 30:{ rate:82, change:'+6 pts' }, 90:{ rate:77, change:'+3 pts' } };
+const TREND_LABELS = { 7:['15 OCT','18 OCT'], 30:['22 SEP','6 OCT'], 90:['24 JUL','6 SEP'] };
+const REVIEWS = {
+  42: { week:42, range:'12 – 18 October 2026', wins:'Water every single day. First 12-day run.', struggles:'Late nights killed reading on Fri and Sun.', intention:'Phone out of the bedroom by 11 pm.' },
+  41: { week:41, range:'5 – 11 October 2026', wins:'Pushups before work four days running.', struggles:'Skipped meditation when meetings ran long.', intention:'Read before opening my phone.' },
+};
+const LAST_WEEK = { days:[[4,5],[3,5],[5,5],[4,5],[4,5],[3,4],[5,5]], votes:{ push:6, claude:5, read:5, water:7, med:2 } };
+const CUSTOM = {
+  ReviewPage: [['path',{d:'M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z'}],['path',{d:'M14 2v5a1 1 0 0 0 1 1h5'}],['path',{d:'M8 14h8'}],['path',{d:'M8 18h5'}]],
+  Sliders: [['path',{d:'M4 7h9'}],['circle',{cx:'17',cy:'7',r:'3'}],['path',{d:'M11 17h9'}],['circle',{cx:'7',cy:'17',r:'3'}]],
+};
+const isDone = (k) => k === 'full' || k === 'minimum';
+
+function ic(name, size, color, sw) {
+  size = size || 20;
+  const L = window.lucide;
+  let node = CUSTOM[name] || (L && ((L.icons && L.icons[name]) || L[name]));
+  if (!node) return e('span', { style:{ display:'inline-block', width:size, height:size, flexShrink:0 } });
+  if (node[0] === 'svg') node = node[2];
+  return e('svg', { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:color || 'currentColor', strokeWidth:sw || 2, strokeLinecap:'round', strokeLinejoin:'round', style:{ display:'block', flexShrink:0 } },
+    node.map(([t, a], i) => e(t, { ...a, key:i })));
+}
+
+function mark(kind, color, size) {
+  size = size || 30;
+  const hc = HC[color];
+  const tone = kind == null ? 'rgba(236,238,242,.3)' : kind === 'skipped' ? C.muted : hc;
+  const R = 18 - 1.1, k = [];
+  k.push(e('defs', { key:'d' }, e('radialGradient', { id:'mk' + color, cx:'35%', cy:'30%', r:'75%' }, e('stop', { offset:0, stopColor:'#fff', stopOpacity:0.45 }), e('stop', { offset:0.5, stopColor:hc, stopOpacity:0 }))));
+  if (kind === 'full') { k.push(e('circle', { key:'f', cx:18, cy:18, r:18, fill:tone })); k.push(e('circle', { key:'g', cx:18, cy:18, r:18, fill:`url(#mk${color})` })); }
+  else k.push(e('circle', { key:'r', cx:18, cy:18, r:R, fill:kind == null ? 'rgba(236,238,242,.02)' : 'none', stroke:tone, strokeWidth:2, strokeDasharray:kind === 'skipped' ? '4 3.4' : undefined }));
+  if (kind === 'minimum') k.push(e('path', { key:'m', d:`M18 ${18 - R} A${R} ${R} 0 0 0 18 ${18 + R} Z`, fill:tone }));
+  if (kind === 'full') k.push(e('path', { key:'c', d:'M24.5 13.2 15.6 22.1 11.5 18', fill:'none', stroke:C.accentInk, strokeWidth:2.9, strokeLinecap:'round', strokeLinejoin:'round', style:{ strokeDasharray:20, strokeDashoffset:0, animation:'o2-fade .3s' } }));
+  if (kind === 'skipped') k.push(e('path', { key:'s', d:'M12.4 18h11.3', stroke:tone, strokeWidth:2.4, strokeLinecap:'round' }));
+  return e('svg', { key:kind || 'none', viewBox:'0 0 36 36', width:size, height:size, style:{ display:'block', overflow:'visible', animation:kind ? 'o2-pop .45s cubic-bezier(.3,1.6,.5,1)' : 'none', filter:kind === 'full' ? `drop-shadow(0 0 9px ${al(hc, .55)})` : kind === 'minimum' ? `drop-shadow(0 0 6px ${al(hc, .35)})` : 'none' } }, k);
+}
+
+const DUST = Array.from({ length:28 }, (_, i) => ({ r:20 + rnd(i * 3.1) * 30, a:rnd(i * 7.7) * Math.PI * 2, s:0.15 + rnd(i * 1.9) * 0.35, o:0.15 + rnd(i * 5.3) * 0.4 }));
+
+function ringsSvg(list, disp, pct) {
+  const OUT = 47.5, n = list.length;
+  const fit = n > 1 ? (OUT - 24) / (n - 1) : 5.7;
+  const step = Math.max(1.6, Math.min(5.7, fit)), sw = step * 0.46;
+  const kids = [e('defs', { key:'d' },
+    e('filter', { id:'o2Glow', x:'-40%', y:'-40%', width:'180%', height:'180%' }, e('feGaussianBlur', { stdDeviation:1.3, result:'b' }), e('feMerge', null, e('feMergeNode', { in:'b' }), e('feMergeNode', { in:'SourceGraphic' }))),
+    e('radialGradient', { id:'o2Core', cx:'50%', cy:'50%', r:'50%' }, e('stop', { offset:0, stopColor:C.accent, stopOpacity:0.22 }), e('stop', { offset:1, stopColor:C.accent, stopOpacity:0 })),
+    e('radialGradient', { id:'o2Halo', cx:'50%', cy:'50%', r:'50%' }, e('stop', { offset:0, stopColor:'#fff', stopOpacity:0.9 }), e('stop', { offset:0.35, stopColor:'#fff', stopOpacity:0.35 }), e('stop', { offset:1, stopColor:'#fff', stopOpacity:0 })))];
+  kids.push(e('circle', { key:'core', cx:50, cy:50, r:24, fill:'url(#o2Core)', style:{ opacity:0.25 + 0.75 * pct } }));
+  for (let i = 0; i < 90; i++) {
+    const a = (i / 90) * Math.PI * 2, major = i % 15 === 0, lit = i / 90 < pct - 0.0001;
+    const r1 = major ? 50.6 : 51.8, r2 = 53.2;
+    kids.push(e('line', { key:'t' + i, x1:50 + r1 * Math.sin(a), y1:50 - r1 * Math.cos(a), x2:50 + r2 * Math.sin(a), y2:50 - r2 * Math.cos(a), stroke:lit ? C.accent : major ? 'rgba(236,238,242,.3)' : 'rgba(236,238,242,.09)', strokeWidth:lit ? 0.55 : 0.4, strokeLinecap:'round', filter:lit ? 'url(#o2Glow)' : undefined }));
+  }
+  const dust = DUST.map((d, i) => e('circle', { key:'du' + i, cx:50 + d.r * Math.sin(d.a), cy:50 - d.r * Math.cos(d.a), r:d.s, fill:'#fff', opacity:d.o }));
+  kids.push(e('g', { key:'dust' }, ...dust, e('animateTransform', { key:'at', attributeName:'transform', type:'rotate', from:'0 50 50', to:'360 50 50', dur:'140s', repeatCount:'indefinite' })));
+  list.forEach((it, i) => {
+    const r = OUT - i * step;
+    const fill = disp[it.id] || 0;
+    const hc = HC[it.color];
+    kids.push(e('circle', { key:it.id + 't', cx:50, cy:50, r, fill:'none', strokeWidth:sw, stroke:'rgba(236,238,242,.075)', strokeDasharray:it.kind === 'skipped' ? `${sw} ${sw}` : undefined }));
+    if (fill > 0.004) {
+      const tot = fill * Math.PI * 2, segs = [];
+      const pt = (a) => `${(50 + r * Math.sin(a)).toFixed(3)} ${(50 - r * Math.cos(a)).toFixed(3)}`;
+      const arc = (a0, a1) => {
+        if (a1 - a0 > Math.PI) { const m = (a0 + a1) / 2; return `M${pt(a0)} A${r} ${r} 0 0 1 ${pt(m)} A${r} ${r} 0 0 1 ${pt(a1)}`; }
+        return `M${pt(a0)} A${r} ${r} 0 0 1 ${pt(a1)}`;
+      };
+      [[0, 0.3], [0.25, 0.2], [0.5, 0.2], [0.7, 0.25], [0.85, 0.35]].forEach(([from, op], j) => {
+        segs.push(e('path', { key:j, d:arc(from * tot, tot), stroke:hc, strokeWidth:sw, fill:'none', strokeOpacity:op }));
+      });
+      const ha = tot, hx = 50 + r * Math.sin(ha), hy = 50 - r * Math.cos(ha);
+      kids.push(e('g', { key:it.id + 'c', filter:'url(#o2Glow)' }, segs, e('circle', { cx:hx, cy:hy, r:sw / 2, fill:hc })));
+      kids.push(e('circle', { key:it.id + 'h', cx:hx, cy:hy, r:sw * 2.1, fill:'url(#o2Halo)', opacity:0.55 }));
+      kids.push(e('circle', { key:it.id + 'p', cx:hx, cy:hy, r:sw * 0.68, fill:'#fff' }));
+    } else if (it.kind !== 'skipped') {
+      kids.push(e('circle', { key:it.id + 'o', cx:50, cy:50 - r, r:sw / 2, fill:hc, filter:'url(#o2Glow)' }));
+    }
+  });
+  return e('svg', { viewBox:'-8 -8 116 116', width:320, height:320, style:{ display:'block', overflow:'visible' } }, kids);
+}
+
+function dayRing(o) {
+  const SW = 3.2, R = 20 - SW / 2, L = 2 * Math.PI * R, acc = o.tint || C.accent;
+  const k = [];
+  if (o.today) {
+    k.push(e('circle', { key:'pulse', cx:20, cy:20, r:20, fill:'none', stroke:acc, strokeWidth:1.2 }, e('animate', { attributeName:'r', from:20, to:27, dur:'2.2s', repeatCount:'indefinite' }), e('animate', { attributeName:'opacity', from:0.6, to:0, dur:'2.2s', repeatCount:'indefinite' })));
+    k.push(e('circle', { key:'td', cx:20, cy:20, r:20, fill:acc }));
+  } else {
+    if (o.complete) k.push(e('circle', { key:'c', cx:20, cy:20, r:R, fill:al(acc, .16) }));
+    k.push(e('circle', { key:'tr', cx:20, cy:20, r:R, fill:'none', strokeWidth:SW, stroke:o.selected ? 'rgba(255,255,255,.92)' : 'rgba(236,238,242,.08)', strokeDasharray:o.skipped ? '3 3' : undefined }));
+    if (!o.skipped && o.progress > 0) k.push(e('circle', { key:'p', cx:20, cy:20, r:R, fill:'none', strokeWidth:SW, stroke:acc, strokeLinecap:o.progress < 1 ? 'round' : undefined, strokeDasharray:L, strokeDashoffset:L * (1 - Math.min(1, o.progress)), transform:'rotate(-90 20 20)', strokeOpacity:o.complete ? 1 : 0.85 }));
+  }
+  if (o.future || o.today) k.push(e('circle', { key:'dot', cx:20, cy:-1.5, r:1.6, fill:acc, opacity:o.today ? 1 : 0.6 }));
+  return e('svg', { viewBox:'0 0 40 40', width:36, height:36, style:{ position:'absolute', overflow:'visible', filter:o.today ? `drop-shadow(0 0 12px ${al(acc, .6)})` : o.complete ? `drop-shadow(0 0 6px ${al(acc, .35)})` : 'none' } }, k);
+}
+
+function trendSvg(vals, idx) {
+  const W = 300, H = 110, PX = 2, PT = 8, step = (W - 2 * PX) / (vals.length - 1);
+  const pts = vals.map((v, i) => [PX + i * step, PT + (1 - v) * (H - PT)]);
+  let line = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2;
+    line += ` C${cx.toFixed(1)} ${y0.toFixed(1)} ${cx.toFixed(1)} ${y1.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  }
+  const last = pts[pts.length - 1], cur = pts[idx];
+  const area = `${line} L${last[0].toFixed(1)} ${H} L${pts[0][0].toFixed(1)} ${H} Z`;
+  const k = [e('defs', { key:'d' },
+    e('linearGradient', { id:'o2Area', x1:0, y1:0, x2:0, y2:1 }, e('stop', { offset:0, stopColor:C.accent, stopOpacity:0.34 }), e('stop', { offset:0.6, stopColor:C.accent, stopOpacity:0.06 }), e('stop', { offset:1, stopColor:C.accent, stopOpacity:0 })),
+    e('linearGradient', { id:'o2Line', x1:0, y1:0, x2:1, y2:0 }, e('stop', { offset:0, stopColor:C.accent, stopOpacity:0.35 }), e('stop', { offset:0.5, stopColor:C.accent, stopOpacity:0.9 }), e('stop', { offset:1, stopColor:C.accent, stopOpacity:1 })),
+    e('filter', { id:'o2LineGlow', x:'-10%', y:'-50%', width:'120%', height:'200%' }, e('feGaussianBlur', { stdDeviation:3, result:'b' }), e('feMerge', null, e('feMergeNode', { in:'b' }), e('feMergeNode', { in:'SourceGraphic' }))))];
+  [0, 1, 2, 3].forEach((i) => {
+    const y = PT + (i * (H - PT)) / 4;
+    k.push(e('line', { key:'g' + i, x1:0, x2:W, y1:y, y2:y, strokeWidth:0.5, stroke:'rgba(236,238,242,.07)', strokeDasharray:'1.5 3' }));
+    k.push(e('text', { key:'l' + i, x:W + 5, y:y + 2.4, fontSize:6.5, fill:'#4d5158', fontFamily:'JetBrains Mono, ui-monospace, monospace' }, `${100 - i * 25}`));
+  });
+  k.push(e('path', { key:'a', d:area, fill:'url(#o2Area)' }));
+  k.push(e('path', { key:'ln', d:line, fill:'none', stroke:'url(#o2Line)', strokeWidth:2.2, strokeLinecap:'round', filter:'url(#o2LineGlow)' }));
+  k.push(e('line', { key:'v', x1:cur[0], x2:cur[0], y1:0, y2:H, stroke:al(C.accent, .4), strokeWidth:0.8, strokeDasharray:'2 2' }));
+  if (idx === vals.length - 1) k.push(e('circle', { key:'pu', cx:cur[0], cy:cur[1], r:4, fill:'none', stroke:C.accent, strokeWidth:1.2 }, e('animate', { attributeName:'r', from:4, to:14, dur:'2s', repeatCount:'indefinite' }), e('animate', { attributeName:'opacity', from:0.7, to:0, dur:'2s', repeatCount:'indefinite' })));
+  k.push(e('circle', { key:'m', cx:cur[0], cy:cur[1], r:4.2, fill:C.canvas, stroke:C.accent, strokeWidth:2.2, style:{ filter:`drop-shadow(0 0 6px ${C.accent})` } }));
+  return e('svg', { viewBox:`0 0 ${W} ${H}`, style:{ display:'block', width:'100%', height:'auto', overflow:'visible' } }, k);
+}
+
+function trendVals(n, end) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    out.push(Math.max(0.3, Math.min(1, (end - 14 + 14 * t + (rnd(i * 7 + n) - 0.5) * 16) / 100)));
+  }
+  out[n - 1] = end / 100;
+  return out;
+}
+
+function weekDot(st, hc, isToday) {
+  const base = { width:13, height:13, borderRadius:'50%', boxSizing:'border-box', flexShrink:0, position:'relative' };
+  if (st === 'full') return e('span', { style:{ ...base, background:`radial-gradient(circle at 35% 30%, #fff8 0, ${hc} 55%)`, boxShadow:`0 0 9px ${al(hc, .55)}` } });
+  if (st === 'minimum') return e('svg', { viewBox:'0 0 12 12', width:13, height:13, style:{ position:'relative', display:'block', filter:`drop-shadow(0 0 4px ${al(hc, .4)})` } }, e('circle', { cx:6, cy:6, r:5.25, fill:C.canvas, stroke:hc, strokeWidth:1.5 }), e('path', { d:'M6 .75 A5.25 5.25 0 0 0 6 11.25 Z', fill:hc }));
+  if (st === 'skipped') return e('svg', { viewBox:'0 0 12 12', width:13, height:13, style:{ position:'relative', display:'block' } }, e('circle', { cx:6, cy:6, r:5.25, fill:'none', stroke:C.muted, strokeWidth:1.5, strokeDasharray:'2.2 1.9' }));
+  if (st === 'pending' || st === 'missed') return isToday
+    ? e('span', { style:{ ...base, border:`2px solid ${hc}`, outline:`1px solid ${al(hc, .45)}`, outlineOffset:2, background:C.canvas, boxShadow:`0 0 10px ${al(hc, .35)}` } })
+    : e('span', { style:{ ...base, border:'2px solid rgba(236,238,242,.22)', background:C.canvas } });
+  if (st === 'off') return e('span', { style:{ position:'relative', width:12, height:3, borderRadius:2, background:'rgba(236,238,242,.2)' } });
+  return e('span', { style:{ ...base, background:'rgba(236,238,242,.07)' } });
+}
+
+class Component extends DCLogic {
+  state = {
+    tab: this.props.screen || 'today',
+    today: { push:'minimum', claude:'full', read:null, water:null, med:null },
+    notes: { push:'Did 50 before work' },
+    sheetFor: null, sheetNote: '',
+    order: IDS.slice(), habitsView: 'active', reordering: false,
+    month: 9, selDay: 20, filter: 'all', over: {}, heatHover: null,
+    win: 30, scrub: null,
+    reviewWeek: 'this', fields: { 43:{ wins:'', struggles:'', intention:'' }, 42:{ wins:REVIEWS[42].wins, struggles:REVIEWS[42].struggles, intention:REVIEWS[42].intention } },
+    savedSnap: { 42:{ wins:REVIEWS[42].wins, struggles:REVIEWS[42].struggles, intention:REVIEWS[42].intention } }, justSaved: false, focus: null, openPast: {},
+    theme: 'dark', remOn: true, remMsg: null, dataMsg: null, confirmReset: false, resetMsg: null,
+    burstKey: 0,
+  };
+  scrollRef = React.createRef();
+  disp = {}; targets = {};
+
+  componentDidMount() {
+    this._mounted = true;
+    if (!window.lucide) this._poll = setInterval(() => { if (window.lucide) { clearInterval(this._poll); this.forceUpdate(); } }, 120);
+  }
+  componentWillUnmount() { this._mounted = false; clearInterval(this._poll); clearTimeout(this._lpT); cancelAnimationFrame(this._raf); }
+  componentDidUpdate(prev) {
+    if (this._lastScreen === undefined) this._lastScreen = prev && prev.screen;
+    if (this.props.screen && this._lastScreen !== this.props.screen) { this._lastScreen = this.props.screen; this.setState({ tab:this.props.screen }); }
+    if (this._lastTab !== this.state.tab) { this._lastTab = this.state.tab; if (this.scrollRef.current) this.scrollRef.current.scrollTop = 0; }
+  }
+
+  tw(key, target, from) {
+    if (!(key in this.disp)) this.disp[key] = from === undefined ? target : from;
+    if (Math.abs(this.disp[key] - target) > 0.0005) { this.targets[key] = target; this.kick(); }
+    return this.disp[key];
+  }
+  kick() {
+    if (this._raf) return;
+    const snapAll = () => { for (const k in this.targets) { this.disp[k] = this.targets[k]; delete this.targets[k]; } };
+    if (typeof document !== 'undefined' && document.hidden) { snapAll(); this._raf = setTimeout(() => { this._raf = null; if (this._mounted) this.forceUpdate(); }, 0); return; }
+    let last = 0;
+    const schedule = () => {
+      let done = false;
+      const run = () => { if (done) return; done = true; clearTimeout(fb); tick(); };
+      const id = requestAnimationFrame(run);
+      const fb = setTimeout(() => { cancelAnimationFrame(id); run(); }, 50);
+      return id || 1;
+    };
+    const tick = () => {
+      if (!this._mounted) { this._raf = null; return; }
+      const now = Date.now(), slow = last && now - last > 45;
+      last = now;
+      let moving = false;
+      for (const k in this.targets) {
+        const d = this.targets[k] - this.disp[k];
+        if (Math.abs(d) < 0.0015 || slow) { this.disp[k] = this.targets[k]; delete this.targets[k]; }
+        else { this.disp[k] += d * 0.11; moving = true; }
+      }
+      this._raf = moving ? schedule() : null;
+      this.forceUpdate();
+    };
+    this._raf = schedule();
+  }
+
+  set(patch) { this.setState(patch); }
+  toggle(id) { this.setState((s) => ({ today:{ ...s.today, [id]:s.today[id] ? null : 'full' } }), () => this.checkBurst()); }
+  checkBurst() { const t = this.state.today; if (IDS.every((id) => t[id] === 'full' || t[id] === 'skipped' || t[id] === 'minimum')) this.setState((s) => ({ burstKey:s.burstKey + 1 })); }
+  openSheet(id) { this.setState((s) => ({ sheetFor:id, sheetNote:s.notes[id] || '' })); }
+  logKind(id, kind) { this.setState((s) => ({ today:{ ...s.today, [id]:kind }, notes:{ ...s.notes, [id]:s.sheetNote.trim() || undefined }, sheetFor:null }), () => this.checkBurst()); }
+  move(idx, off) {
+    this.setState((s) => {
+      const o = s.order.slice(), j = idx + off;
+      if (j < 0 || j >= o.length) return null;
+      const [m] = o.splice(idx, 1); o.splice(j, 0, m);
+      return { order:o };
+    });
+  }
+
+  dayStatuses(month, d) {
+    const s = this.state;
+    if (month === 9 && d === 21) return IDS.map((id) => s.today[id] || 'pending');
+    if (month === 9 && d > 21) return IDS.map(() => 'future');
+    const n = month === 9 ? OCT[d] : 3 + Math.floor(rnd(d * 3 + 1) * 3);
+    const perm = IDS.map((id, i) => ({ i, r:rnd(d * 13 + i + month * 31) })).sort((a, b) => a.r - b.r).map((x) => x.i);
+    let missed = perm.slice(0, 5 - n);
+    if (month === 9 && d === 20) missed = [2];
+    const out = IDS.map((id, i) => (missed.includes(i) ? (id === 'med' ? 'off' : 'missed') : 'full'));
+    if (d % 7 === 3) { const j = out.indexOf('full'); if (j >= 0) out[j] = 'minimum'; }
+    if (month === 9 && d === 16) out[1] = 'skipped';
+    return IDS.map((id, i) => s.over[`${month}-${d}-${id}`] || out[i]);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const I = {
+      plus: ic('Plus', 24, 'currentColor', 2.25), grip: ic('GripVertical', 16), arrowUp: ic('ArrowUp', 18), arrowDown: ic('ArrowDown', 18),
+      chevLeft: ic('ChevronLeft', 20), chevRight: ic('ChevronRight', 20), chevDown: ic('ChevronDown', 16), chevRightSm: ic('ChevronRight', 16),
+      bell: ic('BellRing', 18, 'currentColor', 1.9), send: ic('Send', 17, 'currentColor', 1.8), trendUp: ic('TrendingUp', 13, 'currentColor', 2.2),
+      trophy: ic('Trophy', 18, 'currentColor', 1.75), alert: ic('TriangleAlert', 16, 'currentColor', 2), x: ic('X', 18, 'currentColor', 2.2), trash: ic('Trash2', 16, 'currentColor', 1.75),
+      shield: ic('ShieldCheck', 12, 'currentColor', 2), checkBig: ic('Check', 32, 'currentColor', 3), checkXs: ic('Check', 11, 'currentColor', 3.5), checkSm: ic('CircleCheck', 15, 'currentColor', 2),
+      quote: ic('Quote', 12, 'currentColor', 2), repeat: ic('Repeat2', 12, 'currentColor', 2), info: ic('Info', 13, 'currentColor', 2), flag: ic('Flag', 12, 'currentColor', 2.2),
+      signal: ic('Signal', 16, '#eceef2', 2.5), wifi: ic('Wifi', 16, '#eceef2', 2.5), battery: ic('BatteryFull', 22, '#eceef2', 1.8),
+    };
+    const tab = s.tab;
+    const order = s.order.map((id) => HABITS[id]);
+    const weekOf = (h) => [...h.past, s.today[h.id] || 'pending', 'future', 'future', 'future', 'future'];
+    const GLOWS = {
+      today: 'radial-gradient(ellipse 80% 42% at 50% 46%, rgba(212,255,58,.16), transparent 72%), radial-gradient(ellipse 60% 30% at 90% 8%, rgba(183,156,255,.08), transparent 70%)',
+      habits: 'radial-gradient(ellipse 80% 45% at 95% 8%, rgba(183,156,255,.2), transparent 72%), radial-gradient(ellipse 60% 35% at 0% 40%, rgba(92,200,255,.06), transparent 70%)',
+      history: 'radial-gradient(ellipse 80% 45% at 5% 8%, rgba(92,200,255,.18), transparent 72%), radial-gradient(ellipse 60% 30% at 100% 35%, rgba(212,255,58,.06), transparent 70%)',
+      stats: 'radial-gradient(ellipse 85% 45% at 50% 33%, rgba(212,255,58,.15), transparent 72%)',
+      review: 'radial-gradient(ellipse 80% 45% at 95% 8%, rgba(255,111,167,.17), transparent 72%), radial-gradient(ellipse 60% 30% at 0% 30%, rgba(212,255,58,.06), transparent 70%)',
+      settings: 'radial-gradient(ellipse 80% 45% at 95% 8%, rgba(236,238,242,.08), transparent 72%), radial-gradient(ellipse 60% 30% at 0% 25%, rgba(212,255,58,.05), transparent 70%)',
+    };
+
+    // ---- Today
+    const kinds = order.map((h) => s.today[h.id]);
+    const closed = kinds.filter((k) => k === 'full').length;
+    const minimum = kinds.filter((k) => k === 'minimum').length;
+    const skipped = kinds.filter((k) => k === 'skipped').length;
+    const due = 5 - skipped, open = due - closed - minimum;
+    const allClosed = due > 0 && open === 0;
+    const pctT = due ? (closed + minimum * 0.5) / due : 0;
+    const disp = {};
+    order.forEach((h) => { const k = s.today[h.id]; disp[h.id] = this.tw('f_' + h.id, k === 'full' ? 1 : k === 'minimum' ? 0.5 : 0, 0); });
+    const pct = this.tw('pct', pctT, 0);
+    const todayItems = order.map((h, i) => {
+      const k = s.today[h.id], hc = HC[h.color], wk = weekOf(h), wDone = wk.filter(isDone).length, rest = [];
+      let tone = C.muted;
+      if (h.sched === 'weekly') { if (wDone >= h.times) { rest.push('Goal met this week'); tone = C.accent; } else rest.push(`${wDone} of ${h.times} this week`); }
+      else { rest.push('Daily'); if (h.risk && !k) { rest.push('don’t miss twice'); tone = HC.amber; } }
+      if (k === 'minimum') rest.push(`Min ${h.min}`);
+      const runText = h.run > 0 ? `${h.run}${h.sched === 'weekly' ? 'w' : 'd'} run` : '';
+      const edgeA = k === 'full' ? .55 : k === 'minimum' ? .32 : 0;
+      return {
+        name:h.name, emoji:h.emoji, hc, glow:al(hc, .7), delay:`${0.14 + i * 0.05}s`,
+        tileBg:`linear-gradient(145deg, ${al(hc, .3)}, ${al(hc, .06)})`, tileRing:al(hc, .3),
+        runText, runColor:tone === C.muted ? C.soft : tone, rest:(runText ? ' · ' : '') + rest.join(' · '), tone,
+        isWeekly:h.sched === 'weekly', segs:Array.from({ length:h.times || 0 }, (_, j) => ({ bg:j < wDone ? hc : 'rgba(236,238,242,.1)', glow:j < wDone ? `0 0 6px ${al(hc, .6)}` : 'none' })),
+        hasNote:!!s.notes[h.id] && !!k, note:s.notes[h.id],
+        bg:`linear-gradient(100deg, ${al(hc, k === 'full' ? .15 : k === 'minimum' ? .08 : 0)} 0%, ${al(hc, 0)} 62%) padding-box, linear-gradient(180deg, #121317, #0d0e11) padding-box, linear-gradient(120deg, ${edgeA ? al(hc, edgeA) : 'rgba(255,255,255,.13)'}, rgba(255,255,255,.025) 45%, rgba(255,255,255,.06)) border-box`,
+        shadow:k === 'full' ? `0 18px 36px -24px ${al(hc, .7)}, inset 0 1px 0 rgba(255,255,255,.04)` : 'inset 0 1px 0 rgba(255,255,255,.03)',
+        mark:mark(k, h.color, 30),
+        onDown:() => { this._lp = false; clearTimeout(this._lpT); this._lpT = setTimeout(() => { this._lp = true; this.openSheet(h.id); }, 450); },
+        onUp:() => clearTimeout(this._lpT),
+        onClick:() => { if (this._lp) { this._lp = false; return; } this.toggle(h.id); },
+        onMenu:(ev) => { ev.preventDefault(); clearTimeout(this._lpT); this.openSheet(h.id); },
+      };
+    });
+    const sw = (n) => e('span', { style:{ display:'block', width:10, height:10, borderRadius:'50%', ...n } });
+    const strip = [
+      { n:closed, label:'Closed', color:C.ink, div:'transparent', mark:sw({ background:C.accent, boxShadow:`0 0 8px ${C.accent}` }) },
+      { n:minimum, label:'Minimum', color:C.ink, div:'rgba(255,255,255,.05)', mark:e('svg', { viewBox:'0 0 12 12', width:10, height:10, style:{ display:'block' } }, e('circle', { cx:6, cy:6, r:5.25, fill:'none', stroke:C.soft, strokeWidth:1.5 }), e('path', { d:'M6 .75 A5.25 5.25 0 0 0 6 11.25 Z', fill:C.soft })) },
+      { n:open, label:'Open', color:open ? C.ink : C.muted, div:'rgba(255,255,255,.05)', mark:sw({ border:'1.5px solid rgba(236,238,242,.35)', boxSizing:'border-box' }) },
+    ];
+    const burst = allClosed ? Array.from({ length:22 }, (_, i) => ({ a:`${(i / 22) * 360}deg`, d:`${(i % 4) * 0.04}s`, c:[C.accent, HC.orange, HC.violet, HC.sky, HC.teal, HC.rose][i % 6] })) : [];
+    const orbitIcon = e('svg', { viewBox:'0 0 20 20', width:18, height:18, style:{ display:'block', overflow:'visible', filter:`drop-shadow(0 0 4px ${al(C.accent, .6)})` } },
+      e('circle', { cx:10, cy:11, r:7, fill:'none', stroke:C.accent, strokeWidth:2 }),
+      e('g', null, e('circle', { cx:10, cy:4, r:2.5, fill:C.accent }), e('animateTransform', { attributeName:'transform', type:'rotate', from:'0 10 11', to:'360 10 11', dur:'9s', repeatCount:'indefinite' })));
+
+    // ---- Sheet
+    let sh = {};
+    const sheetH = s.sheetFor && HABITS[s.sheetFor];
+    if (sheetH) {
+      const cur = s.today[sheetH.id], hc = HC[sheetH.color];
+      sh = {
+        emoji:sheetH.emoji, name:sheetH.name, identity:sheetH.identity, wash:al(hc, .16), tileBg:`linear-gradient(145deg, ${al(hc, .32)}, ${al(hc, .08)})`, tileRing:al(hc, .32),
+        note:s.sheetNote, onNote:(ev) => this.set({ sheetNote:ev.target.value }), hasCompletion:!!cur,
+        onClear:() => this.setState((st) => ({ today:{ ...st.today, [sheetH.id]:null }, sheetFor:null })),
+        onSave:() => this.setState((st) => ({ notes:{ ...st.notes, [sheetH.id]:st.sheetNote.trim() || undefined }, sheetFor:null })),
+        options:[
+          { kind:'full', label:'Done', desc:'Did the whole thing.' },
+          { kind:'minimum', label:'Minimum version', desc:sheetH.min ? `“${sheetH.min}” still counts towards your streak.` : 'A smaller version still counts towards your streak.' },
+          { kind:'skipped', label:'Skip today', desc:'Sick or away? Skipping won’t break your streak.' },
+        ].map((o, i) => ({ ...o, delay:`${0.06 + i * 0.05}s`, mark:mark(o.kind, sheetH.color, 30), current:cur === o.kind, border:cur === o.kind ? al(C.accent, .6) : C.line, bg:cur === o.kind ? 'rgba(212,255,58,.07)' : 'rgba(255,255,255,.015)', shadow:cur === o.kind ? '0 0 0 4px rgba(212,255,58,.05)' : 'none', onClick:() => this.logKind(sheetH.id, o.kind) })),
+      };
+    }
+
+    // ---- Habits
+    const archivedView = s.habitsView === 'archived';
+    const list = archivedView ? ARCHIVED : order;
+    const habitRows = list.map((h, idx) => {
+      const hc = HC[h.color], wk = archivedView ? Array(7).fill('inactive') : weekOf(h);
+      return {
+        name:h.name, emoji:h.emoji, identity:h.identity, opacity:archivedView ? 0.6 : 1, hc, delay:`${0.08 + idx * 0.05}s`,
+        run:archivedView ? '–' : h.run, runUnit:h.sched === 'weekly' ? 'week run' : 'day run',
+        bg:`radial-gradient(110% 80% at 0% 0%, ${al(hc, .1)}, transparent 55%) padding-box, linear-gradient(180deg, #121317, #0d0e11) padding-box, linear-gradient(140deg, ${al(hc, .4)}, rgba(255,255,255,.03) 40%, rgba(255,255,255,.07)) border-box`,
+        tileBg:`radial-gradient(120% 120% at 30% 20%, ${al(hc, .42)}, ${al(hc, .08)})`, tileRing:al(hc, .32), tileGlow:al(hc, .55),
+        chip:[h.sched === 'weekly' ? `${h.times}× a week` : 'Daily', h.min && `Min ${h.min}`].filter(Boolean).join(' · '),
+        remIcon:ic(h.reminder ? 'BellRing' : 'BellOff', 12, 'currentColor', 2), reminderText:h.reminder || 'No reminder', remColor:h.reminder ? C.accent : '#4d5158',
+        days:LETTERS.map((L, i) => ({
+          letter:L, letterColor:i === 2 && !archivedView ? C.ink : C.muted, letterWeight:i === 2 ? 700 : 400,
+          band:i === 2 && !archivedView ? 'rgba(236,238,242,.05)' : 'transparent', bandRing:i === 2 && !archivedView ? 'inset 0 0 0 1px rgba(236,238,242,.06)' : 'none',
+          link:isDone(wk[i]) && isDone(wk[i + 1]) ? `linear-gradient(90deg, ${al(hc, .8)}, ${al(hc, .4)})` : 'transparent',
+          dot:weekDot(wk[i], hc, i === 2),
+        })),
+        notReorder:!s.reordering || archivedView, isReorder:s.reordering && !archivedView, canGrip:!archivedView && !s.reordering,
+        upOpacity:idx > 0 ? 1 : 0.3, downOpacity:idx < list.length - 1 ? 1 : 0.3,
+        onUp:() => this.move(idx, -1), onDown:() => this.move(idx, 1),
+      };
+    });
+    const habitFilters = [['active', 'Active', 5], ['archived', 'Archived', 2]].map(([v, label, count]) => {
+      const sel = s.habitsView === v;
+      return { label, count, color:sel ? C.ink : C.muted, badgeBg:sel ? C.accent : C.raised, badgeColor:sel ? C.accentInk : C.muted, onClick:() => this.set({ habitsView:v, reordering:false }) };
+    });
+
+    // ---- History
+    const M = MONTHS[s.month];
+    const fh = s.filter !== 'all' ? HABITS[s.filter] : null;
+    const tint = fh ? HC[fh.color] : null;
+    const cells = [];
+    const blank = { label:'', ring:null, cursor:'default', weight:600, color:C.ink, scale:1, onClick:() => {} };
+    for (let i = 0; i < M.offset; i++) cells.push(blank);
+    let sumDone = 0, sumExp = 0, fullDays = 0;
+    for (let d = 1; d <= M.days; d++) {
+      const st = this.dayStatuses(s.month, d);
+      const isT = s.month === 9 && d === 21, fut = s.month === 9 && d > 21, sel = d === s.selDay;
+      let o;
+      if (fh) {
+        const x = st[IDS.indexOf(fh.id)];
+        o = { progress:x === 'full' ? 1 : x === 'minimum' ? 0.5 : 0, complete:x === 'full', skipped:x === 'skipped' };
+        if (!fut && !isT) { sumExp += x === 'off' ? 0 : 1; sumDone += isDone(x) ? 1 : 0; if (x === 'full') fullDays++; }
+      } else {
+        const exp = st.filter((x) => x !== 'off').length, dn = st.filter(isDone).length;
+        o = { progress:exp ? dn / exp : 0, complete:exp > 0 && dn === exp };
+        if (!fut && !isT) { sumExp += exp; sumDone += dn; if (o.complete) fullDays++; }
+      }
+      cells.push({
+        label:d, ring:dayRing({ ...o, today:isT, future:fut, selected:sel && !isT, tint }), scale:sel ? 1.06 : 1,
+        weight:fut ? 400 : 600, color:isT ? C.accentInk : fut ? '#4d5158' : sel ? '#fff' : C.ink, cursor:fut ? 'default' : 'pointer',
+        onClick:() => { if (!fut) this.set({ selDay:d }); },
+      });
+    }
+    while (cells.length % 7) cells.push(blank);
+    const calWeeks = [];
+    for (let i = 0; i < cells.length; i += 7) {
+      const row = cells.slice(i, i + 7), current = s.month === 9 && row.some((c) => c.label === 21);
+      calWeeks.push({ cells:row, band:current ? 'linear-gradient(90deg, rgba(212,255,58,0), rgba(212,255,58,.06) 25%, rgba(212,255,58,.06) 75%, rgba(212,255,58,0))' : 'transparent', bandRing:'none' });
+    }
+    const selSt = this.dayStatuses(s.month, s.selDay);
+    const shownIds = fh ? [fh.id] : IDS;
+    const isTodaySel = s.month === 9 && s.selDay === 21;
+    const dayIdx = (M.offset + s.selDay - 1) % 7;
+    const entries = shownIds.map((id) => ({ h:HABITS[id], st:selSt[IDS.indexOf(id)] }));
+    const dExp = entries.filter((x) => x.st !== 'off').length, dDone = entries.filter((x) => isDone(x.st)).length;
+    const cycle = { full:'minimum', minimum:'skipped', skipped:'missed', missed:'full', off:'full' };
+    const dayChips = entries.map(({ h, st }) => {
+      const hc = HC[h.color];
+      let c = { borderStyle:'solid', borderColor:C.lineStrong, bg:'rgba(255,255,255,.015)', shadow:'none', color:C.soft, weight:500, deco:'none', showIcon:false, icon:null, padL:'14px' };
+      if (st === 'full') c = { ...c, borderColor:'transparent', bg:`radial-gradient(120% 140% at 30% 0%, #fff6, ${hc} 55%)`, shadow:`0 8px 18px -8px ${al(hc, .8)}`, color:C.accentInk, weight:600, showIcon:true, icon:ic('Check', 14, C.accentInk, 3), padL:'10px' };
+      else if (st === 'minimum') c = { ...c, borderColor:al(hc, .8), bg:al(hc, .2), color:C.ink, weight:600, showIcon:true, icon:e('svg', { viewBox:'0 0 12 12', width:11, height:11 }, e('circle', { cx:6, cy:6, r:5.2, fill:'none', stroke:hc, strokeWidth:1.5 }), e('path', { d:'M6 .8 A5.2 5.2 0 0 0 6 11.2 Z', fill:hc })), padL:'10px' };
+      else if (st === 'missed') c = { ...c, borderStyle:'dashed', borderColor:'rgba(236,238,242,.25)', bg:'transparent', color:C.muted, deco:'line-through' };
+      else if (st === 'skipped') c = { ...c, borderStyle:'dashed', borderColor:'rgba(236,238,242,.25)', bg:'transparent', color:C.muted, showIcon:true, icon:ic('Moon', 12, C.muted, 2), padL:'11px' };
+      else if (st === 'off') c = { ...c, borderColor:C.line, color:'#5d6169' };
+      return { ...c, name:h.short, onClick:() => {
+        if (isTodaySel) this.openSheet(h.id);
+        else this.setState((x) => ({ over:{ ...x.over, [`${x.month}-${x.selDay}-${h.id}`]:cycle[st] || 'full' } }));
+      } };
+    });
+    const daySegs = entries.map(({ h, st }) => ({ bg:st === 'full' ? HC[h.color] : st === 'minimum' ? `linear-gradient(90deg, ${HC[h.color]} 50%, ${al(HC[h.color], .2)} 50%)` : 'rgba(236,238,242,.07)', glow:st === 'full' ? `0 0 10px ${al(HC[h.color], .55)}` : 'none' }));
+    const dayNotes = isTodaySel ? shownIds.filter((id) => s.notes[id] && s.today[id]).map((id) => ({ name:HABITS[id].name, note:s.notes[id] })) : [];
+    const daysAgo = s.month === 9 ? 21 - s.selDay : 21 + (30 - s.selDay);
+    const verdict = dExp === 0 ? 'Nothing due' : dDone === dExp ? 'Every orbit closed' : isTodaySel ? `${dExp - dDone} still open` : dDone / dExp >= 0.75 ? 'Strong day' : dDone / dExp >= 0.5 ? 'Kept the chain' : 'A light day';
+    const filterOpts = [{ value:'all', label:'All habits' }, ...IDS.map((id) => ({ value:id, label:`${HABITS[id].emoji} ${HABITS[id].name}` }))];
+    const heat = []; let hf = 0, hp = 0;
+    const hcol = tint || C.accent; const OP = { 1:.2, 2:.42, 3:.68, 4:1 };
+    const start = new Date(2025, 9, 20);
+    for (let w = 0; w < 53; w++) for (let r = 0; r < 7; r++) {
+      const ix = w * 7 + r;
+      if (w === 52 && r > 2) { heat.push({ bg:'transparent', glow:'none', scale:1, onEnter:() => {} }); continue; }
+      const v = rnd(ix + (fh ? IDS.indexOf(fh.id) * 500 : 0) + 3);
+      const lvl = fh ? (v < 0.16 ? 0 : 4) : v < 0.06 ? 0 : v < 0.16 ? 1 : v < 0.34 ? 2 : v < 0.6 ? 3 : 4;
+      if (lvl === 4) hf++; else if (lvl > 0) hp++;
+      const hov = s.heatHover && s.heatHover.ix === ix;
+      heat.push({ bg:lvl === 0 ? 'rgba(236,238,242,.06)' : al(hcol, OP[lvl]), glow:hov ? `0 0 0 1.5px #fff, 0 0 8px ${hcol}` : lvl === 4 && v > 0.88 ? `0 0 5px ${al(hcol, .7)}` : 'none', scale:hov ? 1.6 : 1,
+        onEnter:() => this.set({ heatHover:{ ix, w, r, lvl } }) });
+    }
+    let heatTip = {};
+    if (s.heatHover) {
+      const { w, r, lvl } = s.heatHover; const dt = new Date(start.getTime() + (w * 7 + r) * 864e5);
+      heatTip = { left:`${((w + 0.5) / 53) * 100}%`, date:`${WD[r].toUpperCase()} ${dt.getDate()} ${MON[dt.getMonth()].toUpperCase()}`, text:fh ? (lvl ? 'Done' : 'Missed') : ['Nothing done', '1 of 5 done', '2 of 5 done', '3–4 of 5 done', 'All done'][lvl] };
+      heatTip.left = `clamp(60px, ${heatTip.left}, calc(100% - 60px))`;
+    }
+    const heatMonths = [['NOV', 1], ['JAN', 10], ['MAR', 19], ['MAY', 27], ['JUL', 36], ['SEP', 45]].map(([label, w]) => ({ label, left:`${(w / 53) * 100}%`, right:'auto' })).concat([{ label:'OCT', left:'auto', right:'0' }]);
+    const heatStats = [{ value:hf, label:'Full days', color:hcol }, { value:hp, label:'Partial', color:C.ink }, { value:'31d', label:'Longest run', color:C.ink }];
+
+    // ---- Stats
+    const win = s.win, ov = OVERALL[win];
+    const rateD = Math.round(this.tw('rate', ov.rate, 0));
+    const tv = trendVals(win, ov.rate);
+    const sIdx = s.scrub == null ? tv.length - 1 : Math.min(tv.length - 1, s.scrub);
+    const tdate = new Date(2026, 9, 21 - (tv.length - 1 - sIdx));
+    const tipX = sIdx / (tv.length - 1);
+    const byOrbit = order.slice().sort((a, b) => b.rates[win] - a.rates[win]).map((h, i) => {
+      const hc = HC[h.color], r = h.rates[win], d = r - h.prev[win];
+      return { rank:String(i + 1).padStart(2, '0'), emoji:h.emoji, label:h.name.replace('Meditate 10 min', 'Meditate') + (h.sched === 'weekly' ? ` · ${h.times}×/wk` : ''), rate:r, width:`${r}%`, hc, from:al(hc, .45), glow:al(hc, .4), ring:al(hc, .3), prevLeft:`calc(${h.prev[win]}% - 1px)`,
+        delta:d === 0 ? '0' : Math.abs(d), deltaColor:d > 0 ? C.accent : d < 0 ? C.danger : C.muted, deltaIcon:d === 0 ? ic('Minus', 11, 'currentColor', 2.5) : ic(d > 0 ? 'ArrowUpRight' : 'ArrowDownRight', 12, 'currentColor', 2.5) };
+    });
+    const runTicks = Array.from({ length:31 }, (_, i) => ({ h:i < 12 ? `${7 + (i / 11) * 5}px` : '4px', bg:i < 12 ? C.accent : 'rgba(236,238,242,.1)', glow:i === 11 ? `0 0 10px ${C.accent}` : 'none' }));
+    const statCards = order.map((h) => {
+      const hc = HC[h.color], wDone = weekOf(h).filter(isDone).length;
+      const unit = h.sched === 'weekly' ? 'week' : 'day', f = (n) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+      const target = h.sched === 'weekly' ? h.times : 7;
+      return {
+        emoji:h.emoji, name:h.name, sched:h.sched === 'weekly' ? `${h.times} times a week` : 'Every day', wash:al(hc, .09), edge:al(hc, .35),
+        tileBg:`radial-gradient(120% 120% at 30% 20%, ${al(hc, .42)}, ${al(hc, .08)})`, tileRing:al(hc, .3),
+        stats:[{ label:'Current streak', value:f(h.run), color:C.ink }, { label:'Best streak', value:f(h.best), color:C.ink }, { label:`${win}-day rate`, value:`${h.rates[win]}%`, color:hc }],
+        weekText:`${wDone} of ${target}`,
+        weekSegs:Array.from({ length:target }, (_, i) => ({ bg:i < wDone ? hc : 'rgba(236,238,242,.07)', glow:i < wDone ? `0 0 8px ${al(hc, .45)}` : 'none' })),
+        atRisk:!!h.risk && !s.today[h.id],
+      };
+    });
+
+    // ---- Review
+    const wkNum = s.reviewWeek === 'this' ? 43 : 42;
+    const flds = s.fields[wkNum], snap = s.savedSnap[wkNum];
+    const empty = !flds.wins.trim() && !flds.struggles.trim() && !flds.intention.trim();
+    const unchanged = snap && snap.wins === flds.wins.trim() && snap.struggles === flds.struggles.trim() && snap.intention === flds.intention.trim();
+    const canSave = !empty && !unchanged;
+    const barBg = (dn, exp) => dn >= exp ? 'linear-gradient(180deg, #f0ffb0, #d4ff3a 40%, #a8cc10)' : dn === 0 ? 'rgba(236,238,242,.1)' : `linear-gradient(180deg, ${al(C.accent, dn / exp >= 0.5 ? .8 : .6)}, ${al(C.accent, .35)})`;
+    let ciDays, votes;
+    if (wkNum === 43) {
+      ciDays = LETTERS.map((L, i) => {
+        if (i > 2) return { letter:L, num:'', h:'26%', bg:'repeating-linear-gradient(135deg, rgba(236,238,242,.07) 0 2px, transparent 2px 4px)', glow:'none', lc:'#4d5158', lw:400 };
+        const st = IDS.map((id) => weekOf(HABITS[id])[i]);
+        const exp = st.filter((x) => x !== 'off').length, dn = st.filter(isDone).length;
+        return { letter:L, dn, exp, num:`${dn}/${exp}`, h:`${30 + 70 * Math.min(1, dn / exp)}%`, bg:barBg(dn, exp), glow:dn >= exp ? '0 0 14px rgba(212,255,58,.45)' : 'none', lc:i === 2 ? C.ink : C.muted, lw:i === 2 ? 700 : 400 };
+      });
+      votes = order.map((h) => ({ h, n:weekOf(h).filter(isDone).length }));
+    } else {
+      ciDays = LETTERS.map((L, i) => { const [dn, exp] = LAST_WEEK.days[i]; return { letter:L, dn, exp, num:`${dn}/${exp}`, h:`${30 + 70 * (dn / exp)}%`, bg:barBg(dn, exp), glow:dn >= exp ? '0 0 14px rgba(212,255,58,.45)' : 'none', lc:C.muted, lw:400 }; });
+      votes = order.map((h) => ({ h, n:LAST_WEEK.votes[h.id] }));
+    }
+    const ciDone = ciDays.reduce((a, d) => a + (d.dn || 0), 0), ciExpected = ciDays.reduce((a, d) => a + (d.exp || 0), 0);
+    const voteCards = votes.map(({ h, n }) => {
+      const hc = HC[h.color];
+      return { identity:h.identity, hc, glow:al(hc, .5), count:n, unit:n === 1 ? 'VOTE' : 'VOTES', wash:al(hc, .12), edge:al(hc, .3),
+        pips:Array.from({ length:7 }, (_, i) => ({ h:i < n ? '14px' : '6px', bg:i < n ? hc : 'rgba(236,238,242,.1)', glow:i < n ? `0 0 6px ${al(hc, .6)}` : 'none' })) };
+    });
+    const FIELD_DEFS = [['wins', 'Wins', 'What went well? Small wins count.', 2, 500, 'Sparkles'], ['struggles', 'Friction', 'What got in the way? No judgement.', 2, 500, 'Wind'], ['intention', 'Next week, I will', 'e.g. Lay out my running shoes the night before', 1, 140, 'Target']];
+    const reviewFields = FIELD_DEFS.map(([key, label, placeholder, rows, max, icon]) => {
+      const foc = s.focus === key;
+      return {
+        label, placeholder, rows, value:flds[key], count:`${flds[key].length} / ${max}`, countOpacity:foc ? 1 : 0, icon:ic(icon, 12, 'currentColor', 2),
+        edge:foc ? 'linear-gradient(160deg, rgba(212,255,58,.6), rgba(212,255,58,.1) 60%)' : 'linear-gradient(160deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 50%, rgba(255,255,255,.05))',
+        shadow:foc ? '0 0 0 5px rgba(212,255,58,.05), 0 20px 40px -24px rgba(212,255,58,.4)' : 'none', labelColor:foc ? C.accent : C.soft,
+        onFocus:() => this.set({ focus:key }), onBlur:() => this.set({ focus:null }),
+        onChange:(ev) => { const v = ev.target.value.slice(0, max); this.setState((x) => ({ fields:{ ...x.fields, [wkNum]:{ ...x.fields[wkNum], [key]:v } }, justSaved:false })); },
+      };
+    });
+    const pastReviews = [42, 41].filter((w) => w !== wkNum).map((w) => ({
+      week:w, range:REVIEWS[w].range, open:!!s.openPast[w], rot:s.openPast[w] ? '180deg' : '0deg',
+      rows:[['Wins', REVIEWS[w].wins, HC.teal], ['Friction', REVIEWS[w].struggles, HC.rose], ['Next week, I will', REVIEWS[w].intention, C.accent]].map(([label, value, c]) => ({ label, value, c })),
+      onToggle:() => this.setState((x) => ({ openPast:{ ...x.openPast, [w]:!x.openPast[w] } })),
+    }));
+
+    // ---- Settings
+    const PREV = { dark:{ bg:'linear-gradient(180deg,#0d0e12,#07080b)', l:'#1f2126', l2:'#2a2d33' }, light:{ bg:'linear-gradient(180deg,#ffffff,#f0f0ea)', l:'#e2e2da', l2:'#d3d3ca' }, system:{ bg:'linear-gradient(115deg,#f6f6f1 0 50%,#07080b 50% 100%)', l:'rgba(140,140,140,.35)', l2:'rgba(140,140,140,.5)' } };
+    const themeOpts = [['dark', 'Dark'], ['light', 'Light'], ['system', 'System']].map(([v, label]) => {
+      const sel = s.theme === v;
+      return { label, sel, preview:PREV[v].bg, line:PREV[v].l, line2:PREV[v].l2, weight:sel ? 600 : 400, color:sel ? C.ink : C.muted, scale:sel ? 1 : 0.96,
+        ring:sel ? `0 0 0 2px ${C.accent}, 0 0 0 6px rgba(212,255,58,.12), 0 14px 30px -12px rgba(212,255,58,.4)` : '0 0 0 1px #24262b', onClick:() => this.set({ theme:v }) };
+    });
+    const remHabits = order.filter((h) => h.reminder);
+    const dataRows = [
+      { icon:ic('Download', 18, 'currentColor', 1.8), label:'Export backup', sub:'Save everything as one file', tag:'JSON', msg:'Exported 5 habits, 294 days of check-ins and 2 reviews.' },
+      { icon:ic('Upload', 18, 'currentColor', 1.8), label:'Import backup', sub:'Replaces what’s on this device', tag:'JSON', msg:'Choose a .json backup to restore.' },
+      { icon:ic('Smartphone', 18, 'currentColor', 1.8), label:'Install on this device', sub:'Opens full-screen, works offline', tag:'PWA', msg:'In Safari, tap Share, then Add to Home Screen.' },
+    ].map((r, i) => ({ ...r, divider:i ? 'rgba(255,255,255,.05)' : 'transparent', onClick:() => this.set({ dataMsg:r.msg }) }));
+
+    const TABS = [['today', 'Today', 'CircleCheck'], ['habits', 'Habits', 'ListChecks'], ['history', 'History', 'Calendar'], ['stats', 'Stats', 'ChartNoAxesColumn'], ['review', 'Review', 'ReviewPage'], ['settings', 'Settings', 'Sliders']];
+    const tabIdx = TABS.findIndex((t) => t[0] === tab);
+    const tabs = TABS.map(([id, label, icon]) => ({ label, icon:ic(icon, 22, 'currentColor', tab === id ? 2 : 1.75), color:tab === id ? C.accentInk : C.muted, onClick:() => this.set({ tab:id }) }));
+
+    return {
+      I, tabs, tabX:`${tabIdx * 100}%`, glowBg:GLOWS[tab], scrollRef:this.scrollRef, noise:NOISE,
+      isToday:tab === 'today', isHabits:tab === 'habits', isHistory:tab === 'history', isStats:tab === 'stats', isReview:tab === 'review', isSettings:tab === 'settings',
+      orbitIcon, ringsSvg:ringsSvg(order.map((h) => ({ id:h.id, color:h.color, kind:s.today[h.id] })), disp, pct),
+      closed, due, dayPct:Math.round(pct * 100), strip, todayItems, allClosed, notAllClosed:!allClosed, burst, breathe:allClosed ? 'o2-breathe 3.2s ease-in-out infinite' : 'none',
+      sheetOpen:!!sheetH, sh, closeSheet:() => this.set({ sheetFor:null }),
+      showAdd:!archivedView && !s.reordering, habitFilters, habitRows, reordering:s.reordering && !archivedView,
+      hfLeft:archivedView ? '104px' : '4px', hfWidth:archivedView ? '128px' : '96px',
+      startReorder:() => this.set({ reordering:true }), stopReorder:() => this.set({ reordering:false }),
+      filterVal:s.filter, filterOpts, onFilter:(ev) => this.set({ filter:ev.target.value }),
+      monthTitle:M.name, monthRate:sumExp ? `${Math.round((sumDone / sumExp) * 100)}%` : '–', monthFull:`${fullDays} full ${fullDays === 1 ? 'day' : 'days'}`, calWeeks,
+      prevColor:s.month > 8 ? C.soft : 'rgba(141,145,155,.35)', nextColor:s.month < 9 ? C.soft : 'rgba(141,145,155,.35)',
+      prevMonth:() => { if (s.month > 8) this.set({ month:8, selDay:Math.min(s.selDay, 30) }); },
+      nextMonth:() => { if (s.month < 9) this.set({ month:9, selDay:Math.min(s.selDay, 21) }); },
+      dayTitle:isTodaySel ? `Today · ${s.selDay} Oct` : `${WD[dayIdx]} · ${s.selDay} ${M.short}`, dayVerdict:verdict, dDone, dExp,
+      daySegs, dayChips, dayNotes, hasDayNotes:dayNotes.length > 0,
+      dayHintShow:!isTodaySel, dayHint:daysAgo <= 7 ? 'Forgot to log? Tap a habit to update this day.' : 'Only the last 7 days can be changed.',
+      heat, heatMonths, heatStats, endHeat:() => this.set({ heatHover:null }), hasHeatTip:!!s.heatHover, heatTipLeft:heatTip.left, heatTipDate:heatTip.date, heatTipText:heatTip.text,
+      win, winOpts:[7, 30, 90].map((w) => ({ label:`${w}D`, color:w === win ? C.accentInk : C.muted, onClick:() => this.set({ win:w, scrub:null }) })), winX:`${[7, 30, 90].indexOf(win) * 52}px`,
+      rate:rateD, change:ov.change, trendSvg:trendSvg(tv, sIdx),
+      tipLeft:`${tipX * 100}%`, tipTop:`${((8 + (1 - tv[sIdx]) * 102) / 110) * 100}%`, tipShift:tipX > 0.8 ? '-100%' : tipX < 0.2 ? '0%' : '-50%',
+      tipVal:Math.round(tv[sIdx] * 100), tipDate:sIdx === tv.length - 1 ? 'Today' : `${WD[(tdate.getDay() + 6) % 7]} ${tdate.getDate()} ${MON[tdate.getMonth()]}`, tipDateColor:sIdx === tv.length - 1 ? C.accent : C.muted,
+      onScrub:(ev) => { const r = ev.currentTarget.getBoundingClientRect(); const x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)); const ix = Math.round(x * (tv.length - 1)); if (ix !== s.scrub) this.set({ scrub:ix }); },
+      endScrub:() => this.set({ scrub:null }),
+      trendStart:TREND_LABELS[win][0], trendMid:TREND_LABELS[win][1], runTicks, byOrbit, statCards,
+      reviewWeek:s.reviewWeek, onReviewWeek:(ev) => this.set({ reviewWeek:ev.target.value, justSaved:false }),
+      reviewEyebrow:wkNum === 43 ? 'Week 43 · 19–25 Oct' : 'Week 42 · 12–18 Oct',
+      promiseLabel:wkNum === 43 ? 'Last week you promised' : 'The week before you promised',
+      promise:wkNum === 43 ? REVIEWS[42].intention : REVIEWS[41].intention,
+      ciDays, ciDone, ciExpected, ciPct:ciExpected ? Math.round((ciDone / ciExpected) * 100) : 0, votes:voteCards, reviewFields,
+      savedNote:s.justSaved ? `Week ${wkNum + 1} is locked in. See you Sunday.` : '',
+      ctaLabel:s.justSaved ? 'Locked in' : snap ? `Update week ${wkNum + 1}` : `Lock in week ${wkNum + 1}`,
+      ctaIcon:s.justSaved ? ic('CircleCheck', 19, C.accent, 2.2) : ic('Lock', 17, canSave ? C.accentInk : C.muted, 2.2),
+      ctaPos:canSave ? 'sticky' : 'relative', ctaCursor:canSave ? 'pointer' : 'default', ctaShineOp:canSave ? 1 : 0,
+      ctaBg:canSave ? 'radial-gradient(140% 160% at 30% 0%, #f2ffb8, #d4ff3a 45%, #b2d61a)' : s.justSaved ? 'rgba(212,255,58,.08)' : '#15171b',
+      ctaColor:canSave ? C.accentInk : s.justSaved ? C.accent : C.muted,
+      ctaShadow:canSave ? '0 16px 40px -10px rgba(212,255,58,.6), inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 6px rgba(0,0,0,.08)' : s.justSaved ? 'inset 0 0 0 1px rgba(212,255,58,.3)' : 'inset 0 0 0 1px #1f2023',
+      onReviewSubmit:(ev) => { ev.preventDefault(); if (!canSave) return; const t = { wins:flds.wins.trim(), struggles:flds.struggles.trim(), intention:flds.intention.trim() }; this.setState((x) => ({ savedSnap:{ ...x.savedSnap, [wkNum]:t }, fields:{ ...x.fields, [wkNum]:t }, justSaved:true })); },
+      pastReviews,
+      themeOpts, remOn:s.remOn,
+      remDetail:s.remOn ? `${remHabits.length} habits nudge you if they’re still open.` : 'At each habit’s time, if it’s still open',
+      remChips:remHabits.map((h) => ({ name:h.name, emoji:h.emoji, time:h.reminder, hc:HC[h.color] })),
+      swBg:s.remOn ? 'radial-gradient(120% 140% at 30% 0%, #f2ffb8, #d4ff3a 55%)' : '#1b1d22', swKnob:s.remOn ? C.accentInk : '#6e727b', swX:s.remOn ? '22px' : '0px',
+      swGlow:s.remOn ? '0 0 20px -4px rgba(212,255,58,.6), inset 0 1px 0 rgba(255,255,255,.5)' : 'inset 0 0 0 1px #2a2d33',
+      toggleRem:() => this.set({ remOn:!s.remOn, remMsg:null }), sendTest:() => this.set({ remMsg:'Test notification sent.' }),
+      hasRemMsg:!!s.remMsg, remMsg:s.remMsg, dataRows, hasDataMsg:!!s.dataMsg, dataMsg:s.dataMsg,
+      confirmReset:s.confirmReset, notConfirmReset:!s.confirmReset, askReset:() => this.set({ confirmReset:true, resetMsg:null }),
+      cancelReset:() => this.set({ confirmReset:false }), doReset:() => this.set({ confirmReset:false, resetMsg:'Prototype only — nothing was deleted.' }),
+      hasResetMsg:!!s.resetMsg, resetMsg:s.resetMsg,
+    };
+  }
+}
+</script>
+</body>
+</html>

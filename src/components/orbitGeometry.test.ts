@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { getArcEnd, getOrbitGeometry, getRingFill } from "./orbitGeometry";
+import {
+  DUST,
+  getArcEnd,
+  getArcPath,
+  getOrbitGeometry,
+  getRingFill,
+  getTicks,
+  TICK_COUNT,
+} from "./orbitGeometry";
 
 describe("getOrbitGeometry", () => {
   it("steps rings inwards, outermost first", () => {
@@ -46,5 +54,43 @@ describe("getRingFill", () => {
     expect(getRingFill("minimum")).toBe(0.5);
     expect(getRingFill("skipped")).toBe(0);
     expect(getRingFill(undefined)).toBe(0);
+  });
+});
+
+describe("getArcPath", () => {
+  it("draws a short arc as one clockwise segment from 12 o'clock", () => {
+    expect(getArcPath(40, 0, Math.PI / 2)).toBe("M50.000 10.000 A40 40 0 0 1 90.000 50.000");
+  });
+
+  it("splits an arc of more than half a lap in two", () => {
+    const path = getArcPath(40, 0, 2 * Math.PI);
+    expect(path.match(/A/g)).toHaveLength(2);
+    expect(path).toContain("A40 40 0 0 1 50.000 90.000");
+    expect(path.endsWith("50.000 10.000")).toBe(true);
+  });
+});
+
+describe("getTicks", () => {
+  it("lights ticks clockwise up to the progress", () => {
+    expect(getTicks(0).filter((tick) => tick.lit)).toHaveLength(0);
+    expect(getTicks(0.5).filter((tick) => tick.lit)).toHaveLength(TICK_COUNT / 2);
+    expect(getTicks(1).every((tick) => tick.lit)).toBe(true);
+  });
+
+  it("makes every 15th tick a longer major tick", () => {
+    const ticks = getTicks(0);
+    expect(ticks.filter((tick) => tick.major)).toHaveLength(6);
+    const [first] = ticks;
+    expect(first?.major).toBe(true);
+    expect(first?.y1).toBeGreaterThan(first?.y2 ?? 0);
+  });
+});
+
+describe("DUST", () => {
+  it("is the same every time and stays inside the rings", () => {
+    expect(DUST).toHaveLength(28);
+    for (const { x, y } of DUST) {
+      expect(Math.hypot(x - 50, y - 50)).toBeLessThanOrEqual(50);
+    }
   });
 });

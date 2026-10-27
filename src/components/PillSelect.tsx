@@ -20,13 +20,13 @@ export function PillSelect({ label, value, onChange, children }: PillSelectProps
         onChange={(event) => {
           onChange(event.target.value);
         }}
-        className="touch-target field-sizing-content h-9 max-w-40 appearance-none truncate rounded-full border border-line-strong bg-surface pr-8 pl-3.5 text-sm text-soft"
+        className="touch-target field-sizing-content h-9.5 max-w-42.5 cursor-pointer appearance-none truncate rounded-full border border-line-strong bg-linear-to-b from-raised/70 to-surface pr-8.5 pl-3.75 text-sm text-ink/90 shadow-[inset_0_1px_0_rgb(255_255_255/0.05)]"
       >
         {children}
       </select>
       <ChevronDown
         aria-hidden="true"
-        className="pointer-events-none absolute right-3 size-4 text-muted"
+        className="pointer-events-none absolute right-3.25 size-4 text-muted"
       />
     </span>
   );

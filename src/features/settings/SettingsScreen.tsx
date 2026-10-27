@@ -38,7 +38,7 @@ type Message = { tone: "success" | "error"; text: string };
 
 export function SettingsScreen() {
   return (
-    <Screen title="Settings" subtitle="Mission control">
+    <Screen title="Settings" subtitle="Mission control" glow="settings" gap="loose">
       <AppearanceSection />
       <RemindersSection />
       <DataSection />
