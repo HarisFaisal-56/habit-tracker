@@ -48,6 +48,18 @@ export function describeScheduleShort(schedule: Schedule): string {
   return schedule.type === "daily" ? "Daily" : describeSchedule(schedule);
 }
 
+/**
+ * The schedule chip on a habit card: "Daily", "Mon, Wed, Fri" or "3× a week",
+ * plus the minimum version, e.g. "Daily · Min 20".
+ */
+export function describeScheduleChip({ schedule, minimumVersion }: Habit): string {
+  const when =
+    schedule.type === "weekly"
+      ? `${String(schedule.timesPerWeek)}× a week`
+      : describeScheduleShort(schedule);
+  return minimumVersion ? `${when} · Min ${minimumVersion}` : when;
+}
+
 /** Counts for the Habits caption, e.g. "05 orbits · 4 daily · 1 weekly". Zero counts are left out. */
 export function summarizeHabits(habits: readonly Habit[]): string {
   const count = (type: Schedule["type"]) =>

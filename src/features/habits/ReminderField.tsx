@@ -2,7 +2,7 @@ import { useId } from "react";
 import { Button } from "../../components/Button";
 import { getNotificationPermission } from "../../platform/notifications";
 import { useSettings } from "../../store/settingsStore";
-import { errorClass, hintClass, inputClass } from "./formStyles";
+import { errorClass, hintClass, inputClass, labelClass, optionalClass } from "./formStyles";
 
 type ReminderFieldProps = {
   /** "HH:mm", or "" for no reminder. */
@@ -20,8 +20,8 @@ export function ReminderField({ value, error, onChange }: ReminderFieldProps) {
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
-        Reminder <span className="font-normal text-muted">(optional)</span>
+      <label htmlFor={id} className={labelClass}>
+        Reminder <span className={optionalClass}>· optional</span>
       </label>
       <div className="flex gap-2">
         <input

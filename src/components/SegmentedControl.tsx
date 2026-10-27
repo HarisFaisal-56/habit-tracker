@@ -90,6 +90,9 @@ export function SegmentedControl<T extends string | number>({
               name={name}
               value={option.value}
               checked={checked}
+              aria-label={
+                option.count === undefined ? undefined : `${option.label} (${String(option.count)})`
+              }
               onChange={() => {
                 onChange(option.value);
               }}

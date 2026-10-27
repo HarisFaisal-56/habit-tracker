@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Schedule } from "../../domain/habit";
 import { makeHabit } from "../../test/factories";
-import { describeSchedule, describeScheduleShort, summarizeHabits } from "./describeSchedule";
+import {
+  describeSchedule,
+  describeScheduleChip,
+  describeScheduleShort,
+  summarizeHabits,
+} from "./describeSchedule";
 
 const cases: [Schedule, string][] = [
   [{ type: "daily" }, "Every day"],
@@ -41,5 +46,21 @@ describe("summarizeHabits", () => {
     expect(summarizeHabits([makeHabit({ schedule: { type: "days", days: [1] } })])).toBe(
       "01 orbit · 1 some days",
     );
+  });
+});
+
+describe("describeScheduleChip", () => {
+  it("shows the schedule, with weekly goals as a count", () => {
+    expect(describeScheduleChip(makeHabit())).toBe("Daily");
+    expect(describeScheduleChip(makeHabit({ schedule: { type: "days", days: [1, 3, 5] } }))).toBe(
+      "Mon, Wed, Fri",
+    );
+    expect(describeScheduleChip(makeHabit({ schedule: { type: "weekly", timesPerWeek: 3 } }))).toBe(
+      "3× a week",
+    );
+  });
+
+  it("adds the minimum version", () => {
+    expect(describeScheduleChip(makeHabit({ minimumVersion: "20" }))).toBe("Daily · Min 20");
   });
 });
