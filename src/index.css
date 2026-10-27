@@ -424,6 +424,27 @@
     inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
+/* A dark surface tinted with the accent, e.g. inside the Today run badge. */
+@utility lime-tint {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-accent) 9%, var(--color-card-top)),
+    color-mix(in oklab, var(--color-accent) 4%, var(--color-card-bottom))
+  );
+}
+
+/* A comet of accent light for a spinning border: put it on an oversized layer
+   behind a 1px-inset surface and spin it (animate-orbit). --conic-base sets
+   how much of the accent shows away from the bright arc. */
+@utility conic-accent {
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in oklab, var(--color-accent) var(--conic-base, 0%), transparent) 0 60%,
+    color-mix(in oklab, var(--color-accent) 92%, transparent) 80%,
+    color-mix(in oklab, var(--color-accent) var(--conic-base, 0%), transparent) 100%
+  );
+}
+
 /* A habit's emoji tile: its colour as a lit gradient, with a thin ring. Needs --hc. */
 @utility habit-tile {
   background: radial-gradient(

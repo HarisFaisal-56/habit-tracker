@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { useId, useState } from "react";
 import { Button } from "../../components/Button";
 import { CompletionMark } from "../../components/CompletionMark";
-import { IdentityStatement } from "../../components/IdentityStatement";
+import { HabitIcon } from "../../components/HabitIcon";
 import { Sheet } from "../../components/Sheet";
 import { useRepository } from "../../data/RepositoryContext";
 import { parseDateKey, type DateKey } from "../../domain/dates";
@@ -30,7 +30,10 @@ export function LogSheet({ item, date, today, onClose }: LogSheetProps) {
     <Sheet
       open={item !== undefined}
       onClose={onClose}
-      title={item && `${item.habit.emoji} ${item.habit.name}${dateSuffix}`}
+      title={item && `${item.habit.name}${dateSuffix}`}
+      icon={item && <HabitIcon emoji={item.habit.emoji} color={item.habit.color} size="xl" />}
+      subtitle={item?.habit.identity && `“${item.habit.identity}”`}
+      color={item?.habit.color}
     >
       {item && <LogOptions item={item} date={date} isToday={isToday} onDone={onClose} />}
     </Sheet>
@@ -87,9 +90,8 @@ function LogOptions({
 
   return (
     <div className="flex flex-col gap-4">
-      <IdentityStatement identity={habit.identity} className="-mt-2" />
       <div role="group" aria-label={`Log ${day}`} className="flex flex-col gap-2">
-        {options.map(({ kind, label, description }) => {
+        {options.map(({ kind, label, description }, index) => {
           const current = completion?.kind === kind;
           return (
             <button
@@ -98,25 +100,31 @@ function LogOptions({
               aria-pressed={current}
               onClick={() => void log(kind)}
               className={clsx(
-                "flex min-h-14 items-center gap-3 rounded-2xl border p-3 text-left motion-safe:transition-colors",
+                "flex min-h-16 animate-rise items-center gap-3.25 rounded-tile border px-3.5 py-3 text-left active:scale-98 motion-safe:transition",
                 current
-                  ? "border-accent-text bg-accent/10"
-                  : "border-line hover:bg-raised active:bg-raised",
+                  ? "border-accent-text/60 bg-accent/7 shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-accent)_5%,transparent)]"
+                  : "border-line bg-ink/1.5 hover:bg-raised/60",
               )}
+              style={{ animationDelay: `${String(0.06 + index * 0.05)}s` }}
             >
               <CompletionMark kind={kind} color={habit.color} />
               <span className="min-w-0 flex-1">
                 <span className="block font-medium">{label}</span>
-                <span className="block text-sm text-muted">{description}</span>
+                <span className="mt-0.5 block text-note text-muted">{description}</span>
               </span>
+              {current && (
+                <span className="rounded-md bg-accent/10 px-1.75 py-0.75 font-mono text-micro tracking-widest text-accent-text">
+                  NOW
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      <div>
-        <label htmlFor={noteId} className="mb-1 block text-sm font-medium">
-          Note <span className="font-normal text-muted">(optional)</span>
+      <div className="rounded-field border border-line bg-well px-3.5 py-3 focus-within:border-accent-text/50">
+        <label htmlFor={noteId} className="label mb-1.5 block">
+          Note <span className="text-dim">· optional</span>
         </label>
         <textarea
           id={noteId}
@@ -127,10 +135,10 @@ function LogOptions({
           rows={2}
           maxLength={NOTE_MAX_LENGTH}
           placeholder="How did it go?"
-          className="w-full rounded-xl border border-line bg-canvas px-3 py-2 text-base text-ink placeholder:text-muted"
+          className="block w-full resize-none bg-transparent text-base leading-snug text-ink focus:outline-none"
         />
         {!completion && (
-          <p className="mt-1 text-sm text-muted">Saved when you choose an option above.</p>
+          <p className="mt-1 text-note text-faint">Saved when you choose an option above.</p>
         )}
       </div>
 
@@ -150,7 +158,6 @@ function LogOptions({
             Clear {day}
           </Button>
           <Button
-            variant="secondary"
             className="flex-1"
             disabled={trimmedNote === completion.note}
             onClick={() => void log(completion.kind)}

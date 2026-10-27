@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eachDay } from "../../domain/dates";
 import { makeCompletions, makeHabit, on } from "../../test/factories";
-import { buildTodayList, summarizeItem, type TodayItem } from "./todayList";
+import { buildTodayList, getDayPercent, summarizeItem, type TodayItem } from "./todayList";
 
 const today = "2025-01-08"; // Wednesday
 
@@ -76,20 +76,21 @@ describe("summarizeItem", () => {
   };
 
   it("shows just the schedule before a streak starts", () => {
-    expect(summarizeItem(itemFor())).toEqual({ text: "Daily", tone: "normal" });
+    expect(summarizeItem(itemFor())).toEqual({ run: null, details: "Daily", tone: "normal" });
     const monWed = makeHabit({ schedule: { type: "days", days: [1, 3] } });
-    expect(summarizeItem(itemFor(monWed)).text).toBe("Mon, Wed");
+    expect(summarizeItem(itemFor(monWed)).details).toBe("Mon, Wed");
   });
 
   it("shows a day run", () => {
     const item = itemFor(makeHabit(), on("full", ...eachDay("2025-01-05", today)));
-    expect(summarizeItem(item)).toEqual({ text: "4d run · Daily", tone: "normal" });
+    expect(summarizeItem(item)).toEqual({ run: "4d run", details: "Daily", tone: "normal" });
   });
 
   it("warns gently when the run is one miss from breaking", () => {
     const item = itemFor(makeHabit(), on("full", "2025-01-05", "2025-01-06")); // missed 07
     expect(summarizeItem(item)).toEqual({
-      text: "2d run · Daily · don’t miss twice",
+      run: "2d run",
+      details: "Daily · don’t miss twice",
       tone: "warning",
     });
   });
@@ -97,7 +98,8 @@ describe("summarizeItem", () => {
   it("shows weekly progress and week runs", () => {
     const habit = makeHabit({ schedule: { type: "weekly", timesPerWeek: 3 } });
     expect(summarizeItem(itemFor(habit, on("full", "2025-01-06")))).toEqual({
-      text: "1 of 3 this week",
+      run: null,
+      details: "1 of 3 this week",
       tone: "normal",
     });
 
@@ -107,15 +109,27 @@ describe("summarizeItem", () => {
       ...on("full", "2025-01-06", "2025-01-07", today),
     });
     expect(summarizeItem(met)).toEqual({
-      text: "2w run · Goal met this week",
+      run: "2w run",
+      details: "Goal met this week",
       tone: "success",
     });
   });
 
   it("explains a fully excused week", () => {
     const habit = makeHabit({ schedule: { type: "weekly", timesPerWeek: 1 } });
-    expect(summarizeItem(itemFor(habit, on("skipped", "2025-01-06"))).text).toBe(
+    expect(summarizeItem(itemFor(habit, on("skipped", "2025-01-06"))).details).toBe(
       "Excused this week",
     );
+  });
+});
+
+describe("getDayPercent", () => {
+  it("counts closed habits fully and the minimum version half", () => {
+    expect(getDayPercent({ closed: 1, minimum: 1, due: 5 })).toBeCloseTo(0.3);
+    expect(getDayPercent({ closed: 2, minimum: 0, due: 2 })).toBe(1);
+  });
+
+  it("is zero when nothing is due", () => {
+    expect(getDayPercent({ closed: 0, minimum: 0, due: 0 })).toBe(0);
   });
 });
