@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, Trash } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../../components/Button";
 import { Sheet } from "../../components/Sheet";
@@ -38,7 +38,7 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
   }
 
   return (
-    <section aria-label="Manage habit" className="flex flex-col gap-2 border-t border-line pt-4">
+    <section aria-label="Manage habit" className="flex flex-col gap-2 border-t border-ink/5 pt-4">
       {habit.archived ? (
         <>
           <Button
@@ -55,7 +55,7 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
               </p>
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   className="flex-1"
                   onClick={() => {
                     setConfirmingDelete(false);
@@ -74,8 +74,8 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
             </div>
           ) : (
             <Button
-              variant="danger"
-              icon={Trash}
+              variant="danger-ghost"
+              icon={Trash2}
               onClick={() => {
                 setConfirmingDelete(true);
               }}
@@ -93,7 +93,7 @@ function ManageHabit({ habit, onDone }: { habit: Habit; onDone: () => void }) {
           >
             Archive habit
           </Button>
-          <p className="text-center text-sm text-muted">
+          <p className="text-center text-note text-faint">
             Hides it from Today. Its history is kept and you can restore it any time.
           </p>
         </>

@@ -1,9 +1,8 @@
-import clsx from "clsx";
 import { Feather, HeartHandshake, NotebookPen, Plus, Repeat, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../../components/Button";
-import { habitColor } from "../../components/habitColors";
+import { habitStyle } from "../../components/habitColors";
 import { useRepository } from "../../data/RepositoryContext";
 import type { NewHabit } from "../../data/repository";
 import { useSettings } from "../../store/settingsStore";
@@ -54,22 +53,24 @@ export function Welcome() {
   return (
     <section
       aria-labelledby="welcome-heading"
-      className="flex flex-col gap-5 rounded-3xl border border-line bg-surface p-5"
+      className="card flex animate-rise flex-col gap-5 rounded-card p-5 [--card-edge:color-mix(in_oklab,var(--color-accent)_30%,transparent)] [--card-wash:radial-gradient(90%_60%_at_100%_0%,color-mix(in_oklab,var(--color-accent)_10%,transparent),transparent_60%)]"
     >
       <div>
-        <h2 id="welcome-heading" className="text-xl font-semibold">
+        <h2 id="welcome-heading" className="text-heading font-medium">
           Welcome
         </h2>
-        <p className="text-muted">
+        <p className="mt-1 text-md text-soft">
           A calm habit tracker that forgives bad days. Everything stays on this device.
         </p>
       </div>
 
       <ul className="flex flex-col gap-3">
         {PRINCIPLES.map(({ icon: Icon, title, text }) => (
-          <li key={title} className="flex gap-3">
-            <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-accent-text" />
-            <p>
+          <li key={title} className="flex items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-b from-raised to-surface text-accent-text shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]">
+              <Icon aria-hidden="true" className="size-4.5" strokeWidth={1.8} />
+            </span>
+            <p className="text-md">
               <span className="font-medium">{title}.</span>{" "}
               <span className="text-muted">{text}</span>
             </p>
@@ -78,17 +79,15 @@ export function Welcome() {
       </ul>
 
       <div className="flex flex-col gap-2">
-        <h3 className="font-medium">Start with one of these</h3>
+        <h3 className="section-label">Start with one of these</h3>
         <ul className="grid grid-cols-2 gap-2">
           {STARTER_HABITS.map((habit) => (
             <li key={habit.name}>
               <button
                 type="button"
                 onClick={() => void addStarter(habit)}
-                className={clsx(
-                  "flex min-h-14 w-full items-center gap-2 rounded-2xl p-3 text-left hover:opacity-90 active:opacity-80",
-                  habitColor(habit.color).soft,
-                )}
+                className="habit-tile flex min-h-14 w-full items-center gap-2 rounded-2xl p-3 text-left hover:brightness-110 active:scale-98 motion-safe:transition"
+                style={habitStyle(habit.color)}
               >
                 <span aria-hidden="true" className="text-xl">
                   {habit.emoji}
@@ -109,6 +108,8 @@ export function Welcome() {
       </div>
 
       <Button
+        variant="cta"
+        className="min-h-13 text-base"
         icon={Plus}
         onClick={() => {
           dismissWelcome();

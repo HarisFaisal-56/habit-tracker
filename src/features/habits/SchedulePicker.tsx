@@ -41,7 +41,7 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-2 text-sm font-medium">How often</legend>
+      <legend className="label mb-2 text-soft">How often</legend>
 
       <SegmentedControl
         label="Schedule type"
@@ -73,7 +73,7 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
                     aria-hidden="true"
                     className={clsx(
                       "flex size-11 cursor-pointer items-center justify-center rounded-full text-sm font-semibold peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text",
-                      checked ? "bg-accent text-accent-ink" : "bg-raised text-muted",
+                      checked ? "lime-gloss text-accent-ink" : "bg-raised text-muted",
                     )}
                   >
                     {WEEKDAY_NAMES[day].charAt(0)}
@@ -100,7 +100,7 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
               onClick={() => {
                 onChange({ timesPerWeek: values.timesPerWeek - 1 });
               }}
-              className="bg-raised"
+              variant="round"
             />
             <output
               aria-live="polite"
@@ -118,10 +118,10 @@ export function SchedulePicker({ values, errors, onChange }: SchedulePickerProps
               onClick={() => {
                 onChange({ timesPerWeek: values.timesPerWeek + 1 });
               }}
-              className="bg-raised"
+              variant="round"
             />
           </div>
-          <p className="mt-2 text-sm text-muted">
+          <p className="mt-2 text-note text-faint">
             Any days you like. Your streak counts weeks where you hit the goal.
           </p>
           {errors.timesPerWeek && (

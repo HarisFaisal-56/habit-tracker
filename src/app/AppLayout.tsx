@@ -5,8 +5,8 @@ import { TabBar } from "./TabBar";
 import { useApplyTheme } from "./useApplyTheme";
 
 /**
- * A full-height column: the screen scrolls in `main`, and the tab bar is docked
- * below it rather than floating on top, so it never covers content.
+ * A full-height scroller with the tab bar floating over its bottom edge. Content
+ * gets enough bottom padding to scroll clear of the bar.
  */
 export function AppLayout() {
   useApplyTheme();
@@ -21,11 +21,16 @@ export function AppLayout() {
 
   return (
     <div className="flex h-dvh flex-col px-safe">
-      <main ref={scrollRef} className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <div className="mx-auto w-full max-w-2xl px-5 pb-6">
+      <main
+        ref={scrollRef}
+        className="no-scrollbar flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
+      >
+        <div className="mx-auto w-full max-w-2xl px-5 pb-tab-bar">
           <Outlet />
         </div>
       </main>
+      <div aria-hidden="true" className="top-fade pointer-events-none fixed inset-x-0 top-0 z-20" />
+      <div aria-hidden="true" className="noise pointer-events-none fixed inset-0 z-10" />
       <TabBar />
     </div>
   );

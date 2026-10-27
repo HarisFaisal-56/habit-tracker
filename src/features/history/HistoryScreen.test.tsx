@@ -160,7 +160,7 @@ describe("HistoryScreen", () => {
       expect(within(details).getByText(/Forgot to log\?/)).toBeInTheDocument();
       await user.click(within(details).getByRole("button", { name: /Read/ }));
 
-      const sheet = screen.getByRole("dialog", { name: "📚 Read · Tue 7 Jan" });
+      const sheet = screen.getByRole("dialog", { name: "Read · Tue 7 Jan" });
       expect(within(sheet).getByRole("button", { name: /Skip this day/ })).toBeInTheDocument();
       await user.click(within(sheet).getByRole("button", { name: /^Done/ }));
 

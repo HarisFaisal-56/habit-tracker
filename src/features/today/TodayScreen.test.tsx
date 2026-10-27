@@ -177,7 +177,7 @@ describe("TodayScreen", () => {
     let sheet = await openOptions(user, "Read");
     await user.type(within(sheet).getByLabelText(/Note/), "Finished chapter 3");
     await user.click(within(sheet).getByRole("button", { name: /^Done/ }));
-    expect(await screen.findByText("“Finished chapter 3”")).toBeInTheDocument();
+    expect(await screen.findByText("Finished chapter 3", { selector: "span" })).toBeInTheDocument();
 
     sheet = await openOptions(user, "Read");
     const note = within(sheet).getByLabelText(/Note/);
@@ -189,14 +189,14 @@ describe("TodayScreen", () => {
     await user.clear(note);
     await user.type(note, "Chapter 4 too");
     await user.click(within(sheet).getByRole("button", { name: "Save note" }));
-    expect(await screen.findByText("“Chapter 4 too”")).toBeInTheDocument();
+    expect(await screen.findByText("Chapter 4 too", { selector: "span" })).toBeInTheDocument();
 
     sheet = await openOptions(user, "Read");
     await user.click(within(sheet).getByRole("button", { name: "Clear today" }));
     await waitFor(() => {
       expect(tile("Read")).toHaveAccessibleName(/Not done yet$/);
     });
-    expect(screen.queryByText("“Chapter 4 too”")).not.toBeInTheDocument();
+    expect(screen.queryByText("Chapter 4 too", { selector: "span" })).not.toBeInTheDocument();
   });
 
   it("opens the options on a long press or right-click", async () => {
@@ -250,7 +250,8 @@ describe("TodayScreen", () => {
 
     renderApp("/", repository);
 
-    expect(await screen.findByText("3d run · Daily · don’t miss twice")).toBeInTheDocument();
+    await screen.findByText("Read");
+    expect(tile("Read")).toHaveTextContent("3d run · Daily · don’t miss twice");
   });
 
   it("shows weekly goal progress", async () => {

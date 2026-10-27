@@ -52,34 +52,49 @@ export function buildTodayList(
   return { due, other, progress: getTodayProgress(habits, completions, today) };
 }
 
-export type ItemSummary = { text: string; tone: "normal" | "warning" | "success" };
+export type ItemSummary = {
+  /** The current run, e.g. "12d run" or "2w run"; null before a run starts. */
+  run: string | null;
+  /** The schedule or weekly progress, plus any warning, e.g. "Daily · don’t miss twice". */
+  details: string;
+  tone: "normal" | "warning" | "success";
+};
 
 /**
  * The short caption under a habit's name: its run, then its schedule or weekly
  * progress, e.g. "12d run · Daily" or "2d run · 2 of 3 this week".
  */
 export function summarizeItem({ habit, streak, week }: TodayItem): ItemSummary {
-  const parts: string[] = [];
-  if (streak.current > 0) {
-    parts.push(`${String(streak.current)}${streak.unit === "weeks" ? "w" : "d"} run`);
-  }
+  const run =
+    streak.current > 0
+      ? `${String(streak.current)}${streak.unit === "weeks" ? "w" : "d"} run`
+      : null;
 
+  const details: string[] = [];
   let tone: ItemSummary["tone"] = "normal";
   if (week) {
     if (week.target === 0) {
-      parts.push("Excused this week");
+      details.push("Excused this week");
     } else if (week.met) {
-      parts.push("Goal met this week");
+      details.push("Goal met this week");
       tone = "success";
     } else {
-      parts.push(`${String(week.done)} of ${String(week.target)} this week`);
+      details.push(`${String(week.done)} of ${String(week.target)} this week`);
     }
   } else {
-    parts.push(describeScheduleShort(habit.schedule));
+    details.push(describeScheduleShort(habit.schedule));
     if (streak.unit === "days" && streak.atRisk) {
-      parts.push("don’t miss twice");
+      details.push("don’t miss twice");
       tone = "warning";
     }
   }
-  return { text: parts.join(" · "), tone };
+  return { run, details: details.join(" · "), tone };
+}
+
+/**
+ * How much of today is done, 0 to 1: closed habits count fully and the minimum
+ * version half, as on the rings. Zero when nothing is due.
+ */
+export function getDayPercent({ closed, minimum, due }: TodayProgress): number {
+  return due === 0 ? 0 : (closed + minimum * 0.5) / due;
 }

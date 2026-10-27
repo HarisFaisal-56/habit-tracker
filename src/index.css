@@ -4,43 +4,176 @@
    "system"), not the media query directly. See src/app/theme.ts. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* JetBrains Mono for the spaced-out captions, self-hosted so it works offline.
+   One variable file covers every weight. Licence: public/fonts/OFL.txt. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Sizes are taken from design/orbit-upgrade/OrbitApp2.dc.html. */
 @theme {
-  /* For dense chart labels, e.g. the heatmap's month and weekday names. */
+  /* The smallest mono figures, e.g. "3/5" over the review's check-in bars. */
+  --text-nano: 0.53125rem;
+  --text-nano--line-height: 1.2;
+  /* Tiny mono captions, e.g. "TAP TO CLOSE · HOLD FOR MORE" and the strip under the rings. */
+  --text-micro: 0.59375rem;
+  --text-micro--line-height: 1.2;
+  /* Dense chart labels, e.g. the heatmap's month names. */
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 1;
   /* Spaced-out mono captions under habit names, e.g. "12D RUN · DAILY". */
-  --text-caption: 0.6875rem;
+  --text-caption: 0.65625rem;
   --text-caption--line-height: 1.2;
+  /* A section's mono heading, e.g. "BY ORBIT". */
+  --text-mini: 0.6875rem;
+  --text-mini--line-height: 1.2;
   /* The mono line above each screen title, e.g. "WED · 21 OCT · DAY 294". */
-  --text-eyebrow: 0.8125rem;
+  --text-eyebrow: 0.75rem;
   --text-eyebrow--line-height: 1.2;
-  /* The big completion rate on Stats. */
-  --text-hero: 5.25rem;
-  --text-hero--line-height: 1;
-  /* Run lengths on the Stats cards. */
-  --text-stat: 2.625rem;
-  --text-stat--line-height: 0.85;
+  /* Small secondary lines, e.g. the descriptions in the log sheet. */
+  --text-note: 0.84375rem;
+  --text-note--line-height: 1.35;
   /* Between sm and base, for secondary lines that need to fit one row. */
   --text-md: 0.9375rem;
   --text-md--line-height: 1.4;
+  /* Card titles, e.g. a habit on Stats. */
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.25;
+  /* A habit's emoji on its larger tiles. */
+  --text-emoji: 1.375rem;
+  --text-emoji--line-height: 1;
+  /* Section titles, e.g. the month on History. */
+  --text-heading: 1.3125rem;
+  --text-heading--line-height: 1.25;
+  --text-heading--letter-spacing: -0.015em;
   /* Screen titles. */
-  --text-title: 2rem;
+  --text-title: 2.125rem;
   --text-title--line-height: 1.05;
-  --text-title--letter-spacing: -0.02em;
+  --text-title--letter-spacing: -0.03em;
+  /* Run lengths on the Stats cards. */
+  --text-stat: 2.875rem;
+  --text-stat--line-height: 0.85;
+  --text-stat--letter-spacing: -0.04em;
+  /* The count in the middle of the Today rings. */
+  --text-ring: 4.125rem;
+  --text-ring--line-height: 1;
+  --text-ring--letter-spacing: -0.04em;
+  /* The big completion rate on Stats. */
+  --text-hero: 6rem;
+  --text-hero--line-height: 0.95;
+  --text-hero--letter-spacing: -0.05em;
 
-  /* System fonts only: SF on Apple devices, which the designs are drawn in. */
+  /* System fonts for text: SF on Apple devices, which the designs are drawn in. */
   --font-sans:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
-  --font-mono:
-    ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas,
-    monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --animate-sheet-in: sheet-in 200ms ease-out;
+  /* Cards (26px), list tiles (20px) and fields (18px), as in the design. */
+  --radius-card: 1.625rem;
+  --radius-tile: 1.25rem;
+  --radius-field: 1.125rem;
+  /* Emoji tiles. */
+  --radius-icon: 0.875rem;
+  --radius-icon-lg: 0.9375rem;
 
+  /* The design's springy curves. */
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.3, 1.5, 0.5, 1);
+  --ease-slide: cubic-bezier(0.4, 1.35, 0.5, 1);
+
+  --animate-rise: rise 0.6s var(--ease-out-soft) both;
+  --animate-rise-fast: rise 0.3s var(--ease-out-soft) both;
+  --animate-pop: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+  --animate-fade: fade 0.25s;
+  --animate-sheet-in: sheet-in 0.38s cubic-bezier(0.2, 0.95, 0.25, 1);
+  --animate-orbit: orbit 4.5s linear infinite;
+  --animate-orbit-slow: orbit 7s linear infinite;
+  --animate-shine: shine 2.6s ease-in-out infinite;
+  --animate-breathe: breathe 3.2s ease-in-out infinite;
+  --animate-blink: blink 2.4s ease-in-out infinite;
+  --animate-burst: burst 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(4px);
+    }
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(0.5);
+      opacity: 0.2;
+    }
+    60% {
+      transform: scale(1.14);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
   @keyframes sheet-in {
     from {
       transform: translateY(100%);
+    }
+  }
+  @keyframes orbit {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes shine {
+    0% {
+      background-position: 160% 0;
+    }
+    100% {
+      background-position: -60% 0;
+    }
+  }
+  @keyframes breathe {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.015);
+    }
+  }
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+  /* A spark flying out from the centre; --angle sets its direction. */
+  @keyframes burst {
+    0% {
+      transform: rotate(var(--angle)) translateY(0) scaleY(0.2);
+      opacity: 0;
+    }
+    25% {
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(var(--angle)) translateY(-150px) scaleY(1);
+      opacity: 0;
     }
   }
 }
@@ -50,17 +183,24 @@
 @theme static {
   --color-canvas: #f6f6f1;
   --color-surface: #ffffff;
-  /* The docked tab bar. */
-  --color-bar: #ffffff;
+  /* Recessed boxes inside cards, e.g. the note field and the stat tiles. */
+  --color-well: #f1f1eb;
   --color-raised: #ecece5;
   --color-line: #e2e2da;
-  /* Borders that need to show against `bar` and `raised`. */
+  /* Borders that need to show against `raised`. */
   --color-line-strong: #d3d3ca;
   --color-ink: #14150f;
-  /* Secondary body text, e.g. the line under the Today rings. */
+  /* Secondary body text. */
   --color-soft: #42463d;
   --color-muted: #666a60;
+  /* Quieter still, e.g. placeholders and the "/5" after a count. */
+  --color-faint: #80847a;
+  /* The quietest text, e.g. ranks and the footer. */
+  --color-dim: #a3a69c;
   --color-accent: #cdf52a;
+  /* Highlight and shadow ends of the accent's glossy gradient. */
+  --color-accent-hi: #ecffa6;
+  --color-accent-lo: #a6cc12;
   --color-accent-ink: #11140a;
   /* The accent used as text or a stroke on the page background. */
   --color-accent-text: #566800;
@@ -69,6 +209,23 @@
   /* Text and icons drawn on a habit colour, e.g. the check in a done mark. */
   --color-on-habit: #ffffff;
   --color-danger: #c4302b;
+
+  /* Cards: a vertical fill and a lit, diagonal 1px edge (see the `card` utility). */
+  --color-card-top: #ffffff;
+  --color-card-bottom: #fbfbf7;
+  --color-edge-hi: rgb(20 21 15 / 0.13);
+  --color-edge-lo: rgb(20 21 15 / 0.05);
+  --color-edge-end: rgb(20 21 15 / 0.09);
+  /* The top of a bottom sheet. */
+  --color-sheet-top: #ffffff;
+  /* The frosted tab bar. */
+  --color-glass-top: rgb(255 255 255 / 0.8);
+  --color-glass-bottom: rgb(250 250 246 / 0.86);
+  --color-glass-edge: rgb(20 21 15 / 0.12);
+  --color-glass-shadow: rgb(20 21 15 / 0.18);
+  /* Big numbers and titles fade from `title-from` to `title-to`. */
+  --color-title-from: #14150f;
+  --color-title-to: #4d5148;
 
   /* The fixed habit palette (see components/habitColors.ts). */
   --color-habit-emerald: #3f9f3a;
@@ -81,23 +238,40 @@
   --color-habit-amber: #c98a00;
 }
 
-/* Dark values are sampled from the designs in design/. */
+/* Dark values are taken from design/orbit-upgrade/OrbitApp2.dc.html. */
 :root.dark {
   --color-canvas: #07080b;
   --color-surface: #0f1013;
-  --color-bar: #12141a;
+  --color-well: #0a0b0d;
   --color-raised: #1b1d22;
   --color-line: #1f2023;
   --color-line-strong: #27292e;
   --color-ink: #eceef2;
   --color-soft: #b9c0cc;
   --color-muted: #8d919b;
+  --color-faint: #6e727b;
+  --color-dim: #4d5158;
   --color-accent: #d4ff3a;
+  --color-accent-hi: #f2ffb8;
+  --color-accent-lo: #a8cc10;
   --color-accent-ink: #0b0d04;
   --color-accent-text: #d4ff3a;
   --color-accent-mark: #d4ff3a;
   --color-on-habit: #0b0d04;
   --color-danger: #ff6b6b;
+
+  --color-card-top: #121317;
+  --color-card-bottom: #0d0e11;
+  --color-edge-hi: rgb(255 255 255 / 0.14);
+  --color-edge-lo: rgb(255 255 255 / 0.02);
+  --color-edge-end: rgb(255 255 255 / 0.06);
+  --color-sheet-top: #16181c;
+  --color-glass-top: rgb(28 31 37 / 0.78);
+  --color-glass-bottom: rgb(16 18 22 / 0.82);
+  --color-glass-edge: rgb(255 255 255 / 0.16);
+  --color-glass-shadow: rgb(0 0 0 / 0.85);
+  --color-title-from: #ffffff;
+  --color-title-to: #9ea4b0;
 
   --color-habit-emerald: #8be45f;
   --color-habit-teal: #3be8c4;
@@ -124,13 +298,21 @@
 @utility pb-safe-4 {
   padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom));
 }
-/* Room under the docked tab bar: the gap in the designs, plus the home indicator. */
-@utility pb-safe-6 {
-  padding-bottom: calc(--spacing(6) + env(safe-area-inset-bottom));
+/* Room under a screen's content for the floating tab bar. */
+@utility pb-tab-bar {
+  padding-bottom: calc(--spacing(32) + env(safe-area-inset-bottom));
+}
+/* Pins something just above the floating tab bar, e.g. the review's save button. */
+@utility bottom-tab-bar {
+  bottom: calc(--spacing(26) + env(safe-area-inset-bottom));
+}
+/* Space under the tab bar: the home indicator, or a small gap on other devices. */
+@utility pb-tab-gap {
+  padding-bottom: max(calc(env(safe-area-inset-bottom) + --spacing(2)), --spacing(5));
 }
 /* Space above a screen's title: the status bar on notched phones, or a minimum gap. */
 @utility pt-screen {
-  padding-top: calc(max(env(safe-area-inset-top), --spacing(6)) + --spacing(7));
+  padding-top: calc(max(env(safe-area-inset-top), --spacing(6)) + --spacing(8));
 }
 
 /* Stops iOS showing its callout menu during a long press. */
@@ -153,7 +335,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-eyebrow);
   line-height: var(--text-eyebrow--line-height);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -161,22 +343,148 @@
 /* A section's mono caption, a size down from the eyebrow, e.g. "APPEARANCE" or "BY ORBIT". */
 @utility section-label {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: var(--text-xs--line-height);
-  letter-spacing: 0.06em;
+  font-size: var(--text-mini);
+  line-height: var(--text-mini--line-height);
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
+}
+
+/* Titles and big numbers, fading from bright at the top to grey at the bottom.
+   Children with their own colour (e.g. a muted "/5") keep it. */
+@utility text-gradient {
+  background-image: linear-gradient(
+    180deg,
+    var(--color-title-from) var(--text-gradient-stop, 30%),
+    var(--color-title-to)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* A card: a vertical fill with a lit 1px edge, brightest at the top left. Set
+   --card-wash to lay a gradient over the fill and --card-edge to tint the edge
+   (see `habitSurface` in components/habitColors.ts). */
+@utility card {
+  border: 1px solid transparent;
+  background:
+    var(--card-wash, none) padding-box,
+    linear-gradient(180deg, var(--color-card-top), var(--color-card-bottom)) padding-box,
+    linear-gradient(
+        160deg,
+        var(--card-edge, var(--color-edge-hi)),
+        var(--color-edge-lo) 50%,
+        var(--color-edge-end)
+      )
+      border-box;
+}
+
+/* The glossy lime of the main actions and the active tab, with a lime glow
+   underneath. `lime-glow-lg` makes the glow bigger, for the screen's main action. */
+@utility lime-gloss {
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    var(--color-accent-hi),
+    var(--color-accent) 50%,
+    var(--color-accent-lo)
+  );
+  box-shadow:
+    var(--lime-glow, 0 8px 24px -6px color-mix(in oklab, var(--color-accent) 65%, transparent)),
+    inset 0 1px 0 rgb(255 255 255 / 0.65),
+    inset 0 -2px 4px rgb(0 0 0 / 0.1);
+}
+@utility lime-glow-lg {
+  --lime-glow: 0 14px 34px -8px color-mix(in oklab, var(--color-accent) 60%, transparent);
+}
+
+/* A bottom sheet: lit from the top edge, with an optional --sheet-wash of colour. */
+@utility sheet-surface {
+  border: 1px solid transparent;
+  background:
+    var(--sheet-wash, none) padding-box,
+    linear-gradient(180deg, var(--color-sheet-top), var(--color-surface) 40%) padding-box,
+    linear-gradient(180deg, var(--color-glass-edge), var(--color-edge-lo)) border-box;
+  box-shadow: 0 -30px 80px var(--color-glass-shadow);
+}
+
+/* Frosted glass, e.g. the tab bar. */
+@utility glass {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, var(--color-glass-top), var(--color-glass-bottom)) padding-box,
+    linear-gradient(
+        180deg,
+        var(--color-glass-edge),
+        color-mix(in oklab, var(--color-glass-edge) 25%, transparent)
+      )
+      border-box;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    0 20px 40px -12px var(--color-glass-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+/* A dark surface tinted with the accent, e.g. inside the Today run badge. */
+@utility lime-tint {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--color-accent) 9%, var(--color-card-top)),
+    color-mix(in oklab, var(--color-accent) 4%, var(--color-card-bottom))
+  );
+}
+
+/* A comet of accent light for a spinning border: put it on an oversized layer
+   behind a 1px-inset surface and spin it (animate-orbit). --conic-base sets
+   how much of the accent shows away from the bright arc. */
+@utility conic-accent {
+  background: conic-gradient(
+    from 0deg,
+    color-mix(in oklab, var(--color-accent) var(--conic-base, 0%), transparent) 0 60%,
+    color-mix(in oklab, var(--color-accent) 92%, transparent) 80%,
+    color-mix(in oklab, var(--color-accent) var(--conic-base, 0%), transparent) 100%
+  );
+}
+
+/* A band of light sweeping across, e.g. over the review's save button (animate-shine). */
+@utility shine {
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+}
+
+/* Lime light from the top-left corner over a dark card, e.g. last week's promise. */
+@utility promise-surface {
+  background:
+    radial-gradient(
+      130% 120% at 0% 0%,
+      color-mix(in oklab, var(--color-accent) 16%, transparent),
+      color-mix(in oklab, var(--color-accent) 2%, transparent) 60%
+    ),
+    var(--color-card-bottom);
+}
+
+/* A habit's emoji tile: its colour as a lit gradient, with a thin ring. Needs --hc. */
+@utility habit-tile {
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    color-mix(in oklab, var(--hc) 42%, transparent),
+    color-mix(in oklab, var(--hc) 8%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--hc) 32%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
 
 /* A soft halo in the current text colour, e.g. around a habit's colour dot. */
 @utility glow-current {
   box-shadow: 0 0 --spacing(2) color-mix(in oklab, currentColor 55%, transparent);
-}
-
-/* A soft lime light under the main action, e.g. the add-habit button. */
-@utility glow-accent {
-  box-shadow: 0 --spacing(3) --spacing(8) --spacing(-2)
-    color-mix(in oklab, var(--color-accent) 40%, transparent);
 }
 
 /* Keeps a 44px touch target around a control drawn smaller than that. */
@@ -192,64 +500,101 @@
   }
 }
 
-/* A coloured haze behind a screen, like light from off-screen. Pair with a
-   position (glow-at-*) and a colour (glow-*). Only shown in dark mode. */
+/* A soft accent band behind the current week on the History calendar. */
+@utility week-band {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--color-accent) 6%, transparent) 25%,
+    color-mix(in oklab, var(--color-accent) 6%, transparent) 75%,
+    transparent
+  );
+}
+
+/* Faint diagonal stripes, e.g. days still to come in the review's check-ins. */
+@utility bg-hatch {
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-ink) 7%, transparent) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+/* A coloured haze behind a screen, like light from off-screen. Pair with one of
+   the glow-* colours below. Only shown in dark mode. */
 @utility screen-glow {
   position: absolute;
   /* Full viewport width, so the haze never shows an edge beside the content column. */
-  top: --spacing(-16);
+  top: -80px;
   left: 50%;
   width: 100vw;
+  max-width: 48rem;
   transform: translateX(-50%);
-  height: 40rem;
+  height: 720px;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse 75% 45% at var(--glow-x, 50%) var(--glow-y, 0%),
-    color-mix(in oklab, var(--glow-color, var(--color-accent)) 12%, transparent),
-    transparent 75%
-  );
   opacity: 0;
   :root.dark & {
     opacity: 1;
   }
 }
-@utility glow-at-top {
-  --glow-x: 50%;
-  --glow-y: 12%;
+/* Each screen's haze, as in the design's GLOWS. */
+@utility glow-today {
+  background:
+    radial-gradient(ellipse 80% 42% at 50% 46%, rgb(212 255 58 / 0.16), transparent 72%),
+    radial-gradient(ellipse 60% 30% at 90% 8%, rgb(183 156 255 / 0.08), transparent 70%);
 }
-@utility glow-at-top-left {
-  --glow-x: 5%;
-  --glow-y: 10%;
+@utility glow-habits {
+  background:
+    radial-gradient(ellipse 80% 45% at 95% 8%, rgb(183 156 255 / 0.2), transparent 72%),
+    radial-gradient(ellipse 60% 35% at 0% 40%, rgb(92 200 255 / 0.06), transparent 70%);
 }
-@utility glow-at-top-right {
-  --glow-x: 95%;
-  --glow-y: 10%;
+@utility glow-history {
+  background:
+    radial-gradient(ellipse 80% 45% at 5% 8%, rgb(92 200 255 / 0.18), transparent 72%),
+    radial-gradient(ellipse 60% 30% at 100% 35%, rgb(212 255 58 / 0.06), transparent 70%);
 }
-/* Behind the Stats chart, a little below the title. */
-@utility glow-at-chart {
-  --glow-x: 50%;
-  --glow-y: 33%;
+@utility glow-stats {
+  background: radial-gradient(ellipse 85% 45% at 50% 33%, rgb(212 255 58 / 0.15), transparent 72%);
 }
-/* Behind the Today rings. */
-@utility glow-at-rings {
-  --glow-x: 50%;
-  --glow-y: 50%;
+@utility glow-review {
+  background:
+    radial-gradient(ellipse 80% 45% at 95% 8%, rgb(255 111 167 / 0.17), transparent 72%),
+    radial-gradient(ellipse 60% 30% at 0% 30%, rgb(212 255 58 / 0.06), transparent 70%);
 }
-@utility glow-lime {
-  --glow-color: var(--color-accent);
+@utility glow-settings {
+  background:
+    radial-gradient(ellipse 80% 45% at 95% 8%, rgb(236 238 242 / 0.08), transparent 72%),
+    radial-gradient(ellipse 60% 30% at 0% 25%, rgb(212 255 58 / 0.05), transparent 70%);
 }
-@utility glow-sky {
-  --glow-color: var(--color-habit-sky);
+
+/* Fades content out as it scrolls up under the status bar. */
+@utility top-fade {
+  height: calc(env(safe-area-inset-top) + --spacing(4));
+  background: linear-gradient(
+    180deg,
+    var(--color-canvas) 30%,
+    color-mix(in oklab, var(--color-canvas) 0%, transparent)
+  );
 }
-@utility glow-rose {
-  --glow-color: var(--color-habit-rose);
+
+/* Scrolls without showing a scrollbar, as on a phone. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
-@utility glow-violet {
-  --glow-color: var(--color-habit-violet);
-}
-@utility glow-neutral {
-  --glow-color: var(--color-ink);
+
+/* Film grain over everything in dark mode, as in the design. */
+@utility noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+  opacity: 0;
+  :root.dark & {
+    opacity: 0.07;
+  }
 }
 
 @layer base {
@@ -276,6 +621,11 @@
     background-size: 390px 844px;
   }
 
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-faint);
+  }
+
   /* Keep the page behind an open sheet from scrolling. */
   html:has(dialog[open]) {
     overflow: hidden;
@@ -283,5 +633,18 @@
 
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-accent-text;
+  }
+}
+
+/* Motion is decoration here: with reduced motion everything jumps straight to its
+   end state. SVG animations and JS tweens check `useReducedMotion` instead. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
   }
 }

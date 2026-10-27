@@ -14,7 +14,7 @@ import {
   validateHabitForm,
   type HabitFormValues,
 } from "./habitFormValues";
-import { errorClass, hintClass, inputClass } from "./formStyles";
+import { errorClass, hintClass, inputClass, labelClass, optionalClass } from "./formStyles";
 import { ReminderField } from "./ReminderField";
 import { SchedulePicker } from "./SchedulePicker";
 
@@ -81,7 +81,7 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
       className="flex flex-col gap-5"
     >
       <div>
-        <label htmlFor={nameId} className="mb-1 block text-sm font-medium">
+        <label htmlFor={nameId} className={labelClass}>
           Name
         </label>
         <input
@@ -127,8 +127,8 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
       />
 
       <div>
-        <label htmlFor={minimumId} className="mb-1 block text-sm font-medium">
-          Minimum version <span className="font-normal text-muted">(optional)</span>
+        <label htmlFor={minimumId} className={labelClass}>
+          Minimum version <span className={optionalClass}>· optional</span>
         </label>
         <input
           id={minimumId}
@@ -148,8 +148,8 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
       </div>
 
       <div>
-        <label htmlFor={identityId} className="mb-1 block text-sm font-medium">
-          Who you’re becoming <span className="font-normal text-muted">(optional)</span>
+        <label htmlFor={identityId} className={labelClass}>
+          Who you’re becoming <span className={optionalClass}>· optional</span>
         </label>
         <input
           id={identityId}
@@ -176,7 +176,7 @@ export function HabitForm({ habit, onDone }: HabitFormProps) {
       )}
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="ghost" onClick={onDone}>
+        <Button variant="secondary" onClick={onDone}>
           Cancel
         </Button>
         <Button type="submit" disabled={saving}>

@@ -7,7 +7,7 @@ export function AddHabitLink() {
   return (
     <Link
       to={`/habits?${NEW_HABIT_PARAM}`}
-      className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-accent px-5 text-sm font-semibold text-accent-ink hover:brightness-95 active:brightness-95"
+      className="lime-gloss inline-flex min-h-11.5 items-center gap-2 rounded-full px-5 text-sm font-semibold text-accent-ink hover:brightness-105 active:scale-98 motion-safe:transition"
     >
       <Plus aria-hidden="true" className="size-5" />
       Add your first habit

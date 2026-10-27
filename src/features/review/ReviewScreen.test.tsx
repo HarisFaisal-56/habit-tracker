@@ -48,7 +48,7 @@ describe("ReviewScreen", () => {
     expect(screen.getByText("6–12 Jan")).toBeInTheDocument();
     const votes = screen.getByRole("region", { name: "Identity votes" });
     expect(within(votes).getByText("I am someone who reads")).toBeInTheDocument();
-    expect(within(votes).getByText("2 votes")).toBeInTheDocument();
+    expect(within(votes).getByRole("listitem")).toHaveTextContent("2 votes");
     // Monday and Tuesday done; Wednesday (today) still to do.
     expect(screen.getByRole("region", { name: "Check-ins" })).toHaveTextContent("2/3");
   });
@@ -65,8 +65,8 @@ describe("ReviewScreen", () => {
     await user.type(screen.getByLabelText("Next week, I will"), "Phone out of the bedroom");
     await user.click(save);
 
-    expect(await screen.findByText("Saved.")).toBeInTheDocument();
-    const update = await screen.findByRole("button", { name: "Update week 3" });
+    expect(await screen.findByText("Week 3 is locked in. See you Sunday.")).toBeInTheDocument();
+    const update = await screen.findByRole("button", { name: "Locked in" });
     expect(update).toBeDisabled(); // unchanged since saving
     expect(await repository.listWeeklyReviews()).toMatchObject([
       {
@@ -78,7 +78,8 @@ describe("ReviewScreen", () => {
     ]);
 
     await user.type(screen.getByLabelText("Wins"), ", twice");
-    expect(screen.queryByText("Saved.")).not.toBeInTheDocument();
+    expect(screen.queryByText(/is locked in/)).not.toBeInTheDocument();
+    expect(update).toHaveAccessibleName("Update week 3");
     await user.click(update);
 
     await waitFor(async () => {

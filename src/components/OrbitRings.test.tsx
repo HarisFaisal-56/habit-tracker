@@ -10,20 +10,29 @@ const rings: OrbitRing[] = [
 ];
 
 describe("OrbitRings", () => {
-  it("draws a track per habit and an arc only for done ones", () => {
+  it("draws a ring per habit, filled a lap for done and half for the minimum version", () => {
     const { container } = render(<OrbitRings rings={rings} />);
 
-    expect(container.querySelectorAll("g")).toHaveLength(4);
-    const arcs = [...container.querySelectorAll("circle[data-ring-fill]")];
-    expect(arcs.map((arc) => arc.getAttribute("data-ring-fill"))).toEqual(["0.5", "1"]);
+    const drawn = [...container.querySelectorAll("g[data-ring-fill]")];
+    expect(drawn.map((ring) => ring.getAttribute("data-ring-fill"))).toEqual([
+      "0.5",
+      "1",
+      "0",
+      "0",
+    ]);
   });
 
-  it("leaves half of the minimum version's ring undrawn", () => {
-    const { container } = render(<OrbitRings rings={[rings[0] as OrbitRing]} />);
+  it("dashes the track of a skipped habit", () => {
+    const { container } = render(<OrbitRings rings={rings} />);
 
-    const arc = container.querySelector("circle[data-ring-fill]");
-    const circumference = Number(arc?.getAttribute("stroke-dasharray"));
-    expect(Number(arc?.getAttribute("stroke-dashoffset"))).toBeCloseTo(circumference / 2);
+    const skipped = container.querySelectorAll("g[data-ring-fill]")[3];
+    expect(skipped?.querySelector("circle")).toHaveAttribute("stroke-dasharray");
+  });
+
+  it("draws a ring of ticks round the outside", () => {
+    const { container } = render(<OrbitRings rings={rings} progress={0.5} />);
+
+    expect(container.querySelectorAll("line")).toHaveLength(90);
   });
 
   it("shows its children in the middle and hides the drawing from screen readers", () => {
@@ -40,6 +49,7 @@ describe("OrbitRings", () => {
   it("still draws an empty orbit when nothing is due", () => {
     const { container } = render(<OrbitRings rings={[]} />);
 
-    expect(container.querySelectorAll("circle")).toHaveLength(1);
+    expect(container.querySelectorAll("g[data-ring-fill]")).toHaveLength(0);
+    expect(container.querySelector('circle[fill="none"]')).toBeInTheDocument();
   });
 });

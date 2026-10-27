@@ -17,7 +17,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
   const name = useId();
   return (
     <fieldset>
-      <legend className="mb-2 text-sm font-medium">Emoji</legend>
+      <legend className="label mb-2 text-soft">Emoji</legend>
       <div className="grid grid-cols-6 gap-1">
         {HABIT_EMOJIS.map((emoji) => (
           <label key={emoji} className="relative">
@@ -31,7 +31,7 @@ export function EmojiPicker({ value, onChange }: EmojiPickerProps) {
               }}
               className="peer sr-only"
             />
-            <span className="flex h-12 cursor-pointer items-center justify-center rounded-xl text-2xl peer-checked:bg-accent/15 peer-checked:ring-2 peer-checked:ring-accent-text peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text">
+            <span className="flex h-12 cursor-pointer items-center justify-center rounded-2xl text-2xl hover:bg-raised peer-checked:bg-accent/10 peer-checked:ring-1 peer-checked:ring-accent-text/60 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text">
               {emoji}
             </span>
           </label>

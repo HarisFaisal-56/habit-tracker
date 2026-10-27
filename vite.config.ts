@@ -37,7 +37,7 @@ export default defineConfig({
       },
       workbox: {
         // Precache the whole app so it works fully offline after the first visit.
-        globPatterns: ["**/*.{js,css,html,svg,png}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
         // Opens or focuses the app when a reminder notification is tapped.

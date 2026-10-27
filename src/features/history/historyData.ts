@@ -63,6 +63,20 @@ export function summarizeDay(
   return { done, expected };
 }
 
+/**
+ * A few words on how a day went, e.g. "Strong day". Today, which isn't over
+ * yet, says how much is still open instead.
+ */
+export function describeDayVerdict({ done, expected }: DaySummary, isToday: boolean): string {
+  if (expected === 0) return "Nothing due";
+  if (done >= expected) return "Every orbit closed";
+  if (isToday) return `${String(expected - done)} still open`;
+  const share = done / expected;
+  if (share >= 0.75) return "Strong day";
+  if (share >= 0.5) return "Kept the chain";
+  return "A light day";
+}
+
 export type DayEntry = {
   habit: Habit;
   status: DayStatus;
