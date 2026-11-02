@@ -1,0 +1,1326 @@
+diff --git a/src/components/OrbitRings.test.tsx b/src/components/OrbitRings.test.tsx
+index e9adbc9..e0d4953 100644
+--- a/src/components/OrbitRings.test.tsx
++++ b/src/components/OrbitRings.test.tsx
+@@ -1,4 +1,4 @@
+-import { render } from "@testing-library/react";
++import { render, waitFor } from "@testing-library/react";
+ import { describe, expect, it } from "vitest";
+ import { OrbitRings, type OrbitRing } from "./OrbitRings";
+ 
+@@ -32,7 +32,45 @@ describe("OrbitRings", () => {
+   it("draws a ring of ticks round the outside", () => {
+     const { container } = render(<OrbitRings rings={rings} progress={0.5} />);
+ 
+-    expect(container.querySelectorAll("line")).toHaveLength(90);
++    const counts = [...container.querySelectorAll("path[data-ticks]")].map((path) =>
++      Number(path.getAttribute("data-ticks")),
++    );
++    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(90);
++  });
++
++  it("lights the ticks up to the progress once it has appeared", async () => {
++    const { container, rerender } = render(<OrbitRings rings={rings} progress={0.5} />);
++    const reveal = () => container.querySelector("mask circle[data-lit]");
++
++    // Starts dark so the ticks sweep on.
++    expect(reveal()).toHaveAttribute("data-lit", "0");
++    await waitFor(() => {
++      expect(reveal()).toHaveAttribute("data-lit", "0.5");
++    });
++
++    rerender(<OrbitRings rings={rings} progress={0.25} />);
++    expect(reveal()).toHaveAttribute("data-lit", "0.25");
++    expect(container.querySelector("g[mask]")).toHaveAttribute(
++      "mask",
++      `url(#${String(reveal()?.closest("mask")?.id)})`,
++    );
++  });
++
++  it("glides arcs to their length with CSS, starting empty", async () => {
++    const { container } = render(<OrbitRings rings={rings} />);
++    const done = container.querySelectorAll("g[data-ring-fill]")[1];
++    const head = () => done?.querySelector<SVGGElement>("g.orbit-glide")?.style.transform;
++
++    expect(head()).toBe("rotate(-90deg)");
++    await waitFor(() => {
++      expect(head()).toBe("rotate(270deg)");
++    });
++  });
++
++  it("uses no SVG filters, which are slow to repaint on phones", () => {
++    const { container } = render(<OrbitRings rings={rings} progress={1} />);
++
++    expect(container.querySelector("filter, [filter]")).toBeNull();
+   });
+ 
+   it("shows its children in the middle and hides the drawing from screen readers", () => {
+@@ -43,7 +81,9 @@ describe("OrbitRings", () => {
+     );
+ 
+     expect(getByText("1/4")).toBeInTheDocument();
+-    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
++    for (const svg of container.querySelectorAll("svg")) {
++      expect(svg).toHaveAttribute("aria-hidden", "true");
++    }
+   });
+ 
+   it("still draws an empty orbit when nothing is due", () => {
+diff --git a/src/components/OrbitRings.tsx b/src/components/OrbitRings.tsx
+index 75cab0f..555c2f7 100644
+--- a/src/components/OrbitRings.tsx
++++ b/src/components/OrbitRings.tsx
+@@ -1,18 +1,17 @@
+-import { useId, type ReactNode } from "react";
++import { useId, type CSSProperties, type ReactNode } from "react";
+ import type { CompletionKind } from "../domain/habit";
+ import { habitColor } from "./habitColors";
+ import {
+   DUST,
+-  getArcEnd,
+-  getArcPath,
+   getOrbitGeometry,
+   getRingFill,
+-  getTicks,
++  getTickPaths,
+   ORBIT_CENTER,
+   TAIL_SEGMENTS,
++  TICK_COUNT,
++  TICK_MASK,
+ } from "./orbitGeometry";
+-import { useReducedMotion } from "./useReducedMotion";
+-import { useTween } from "./useTween";
++import { useEntered } from "./useEntered";
+ 
+ export type OrbitRing = {
+   id: string;
+@@ -30,9 +29,14 @@ type OrbitRingsProps = {
+   children?: ReactNode;
+ };
+ 
+-const center = { cx: ORBIT_CENTER, cy: ORBIT_CENTER };
++const VIEW_BOX = "-8 -8 116 116";
+ const TRACK = "color-mix(in oklab, var(--color-ink) 7.5%, transparent)";
+-const ORBIT_ORIGIN = `${String(ORBIT_CENTER)} ${String(ORBIT_CENTER)}`;
++// Rings are drawn round (0, 0) inside this, so a CSS rotation turns them about
++// their centre in every browser, with no transform-origin quirks.
++const AT_CENTER = `translate(${String(ORBIT_CENTER)} ${String(ORBIT_CENTER)})`;
++const TICK_PATHS = getTickPaths();
++/** Widths of the glow bands round a done arc, as multiples of its stroke. */
++const GLOW_BANDS = [1.5, 2.1, 2.8];
+ 
+ /**
+  * One concentric ring per habit, outermost first, inside a ring of ticks. A done
+@@ -40,27 +44,31 @@ const ORBIT_ORIGIN = `${String(ORBIT_CENTER)} ${String(ORBIT_CENTER)}`;
+  * with a white planet at its head; an open habit shows a dot in its colour at the
+  * top. Arcs glide to their new length. Decorative; give the surrounding element
+  * the accessible progress semantics.
++ *
++ * Performance: everything that moves is a CSS transition or animation, so React
++ * renders once per change rather than every frame, and nothing uses SVG filters
++ * (blur is slow to repaint on phones). Glows are wider, fainter strokes instead.
+  */
+ export function OrbitRings({ rings, progress = 0, children }: OrbitRingsProps) {
+   const { radius, stroke } = getOrbitGeometry(rings.length);
+   const ids = useId();
+-  const reduced = useReducedMotion();
+-  const shownProgress = useTween(progress, 0);
+-  const glow = `${ids}-glow`;
++  const entered = useEntered();
+   const halo = `${ids}-halo`;
+   const core = `${ids}-core`;
+ 
+   return (
+     <div className="relative mx-auto aspect-square w-80 max-w-full">
+-      <svg viewBox="-8 -8 116 116" className="size-full overflow-visible" aria-hidden="true">
++      {/* Its own layer, so the slow drift is a GPU rotation with no repainting. */}
++      <div aria-hidden="true" className="absolute inset-0 animate-dust">
++        <svg viewBox={VIEW_BOX} aria-hidden="true" className="size-full overflow-visible fill-ink">
++          {DUST.map(({ x, y, r, opacity }, index) => (
++            <circle key={index} cx={x} cy={y} r={r} opacity={opacity} />
++          ))}
++        </svg>
++      </div>
++
++      <svg viewBox={VIEW_BOX} className="relative size-full overflow-visible" aria-hidden="true">
+         <defs>
+-          <filter id={glow} x="-40%" y="-40%" width="180%" height="180%">
+-            <feGaussianBlur stdDeviation="1.3" result="blur" />
+-            <feMerge>
+-              <feMergeNode in="blur" />
+-              <feMergeNode in="SourceGraphic" />
+-            </feMerge>
+-          </filter>
+           <radialGradient id={core}>
+             <stop offset="0" stopColor="var(--color-accent)" stopOpacity="0.22" />
+             <stop offset="1" stopColor="var(--color-accent)" stopOpacity="0" />
+@@ -72,100 +80,149 @@ export function OrbitRings({ rings, progress = 0, children }: OrbitRingsProps) {
+           </radialGradient>
+         </defs>
+ 
+-        <circle {...center} r={24} fill={`url(#${core})`} opacity={0.25 + 0.75 * shownProgress} />
++        <Ticks progress={entered ? progress : 0} ids={ids} core={`url(#${core})`} />
+ 
+-        {getTicks(shownProgress).map(({ major, lit, ...line }, index) => (
+-          <line
+-            key={index}
+-            {...line}
+-            strokeWidth={lit ? 0.55 : 0.4}
+-            strokeLinecap="round"
+-            stroke={
+-              lit
+-                ? "var(--color-accent-mark)"
+-                : `color-mix(in oklab, var(--color-ink) ${major ? "30%" : "9%"}, transparent)`
+-            }
+-            filter={lit ? `url(#${glow})` : undefined}
+-          />
+-        ))}
+-
+-        <g className="fill-ink">
+-          {DUST.map(({ x, y, r, opacity }, index) => (
+-            <circle key={index} cx={x} cy={y} r={r} opacity={opacity} />
+-          ))}
+-          {!reduced && (
+-            <animateTransform
+-              attributeName="transform"
+-              type="rotate"
+-              from={`0 ${ORBIT_ORIGIN}`}
+-              to={`360 ${ORBIT_ORIGIN}`}
+-              dur="140s"
+-              repeatCount="indefinite"
+-            />
++        <g transform={AT_CENTER}>
++          {rings.length === 0 && (
++            <circle r={radius(0)} fill="none" strokeWidth={stroke} stroke={TRACK} />
+           )}
++          {rings.map((ring, index) => (
++            <Ring
++              key={ring.id}
++              {...ring}
++              r={radius(index)}
++              stroke={stroke}
++              halo={`url(#${halo})`}
++              entered={entered}
++            />
++          ))}
+         </g>
+-
+-        {rings.length === 0 && (
+-          <circle {...center} r={radius(0)} fill="none" strokeWidth={stroke} stroke={TRACK} />
+-        )}
+-        {rings.map((ring, index) => (
+-          <Ring
+-            key={ring.id}
+-            {...ring}
+-            r={radius(index)}
+-            stroke={stroke}
+-            glow={`url(#${glow})`}
+-            halo={`url(#${halo})`}
+-          />
+-        ))}
+       </svg>
+       <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+     </div>
+   );
+ }
+ 
+-type RingProps = OrbitRing & { r: number; stroke: number; glow: string; halo: string };
++/**
++ * The glow in the middle and the ticks round the outside, lit clockwise up to
++ * `progress`. Each set of ticks is a single path; the lit ones are revealed by a
++ * masking arc that glides like the rings, so a change repaints a handful of
++ * shapes rather than fading 90 ticks one by one.
++ */
++function Ticks({ progress, ids, core }: { progress: number; ids: string; core: string }) {
++  const lit = `${ids}-lit`;
++  // Starts half a tick early, so the 12 o'clock tick lights whole and a tick
++  // exactly at the progress (e.g. 3 of 6 done) stays dark, as getTicks has it.
++  const lead = 180 / TICK_COUNT;
++
++  return (
++    <>
++      <circle
++        cx={ORBIT_CENTER}
++        cy={ORBIT_CENTER}
++        r={24}
++        fill={core}
++        className="orbit-glide"
++        style={{ fillOpacity: 0.25 + 0.75 * progress }}
++      />
++      <g fill="none" strokeLinecap="round" strokeWidth={0.4}>
++        <path
++          data-ticks={TICK_PATHS.minorCount}
++          d={TICK_PATHS.minor}
++          stroke="color-mix(in oklab, var(--color-ink) 9%, transparent)"
++        />
++        <path
++          data-ticks={TICK_PATHS.majorCount}
++          d={TICK_PATHS.major}
++          stroke="color-mix(in oklab, var(--color-ink) 30%, transparent)"
++        />
++      </g>
++      <mask id={lit} maskUnits="userSpaceOnUse" x="-8" y="-8" width="116" height="116">
++        <circle
++          data-lit={progress}
++          cx={ORBIT_CENTER}
++          cy={ORBIT_CENTER}
++          r={TICK_MASK.radius}
++          fill="none"
++          stroke="#fff"
++          strokeWidth={TICK_MASK.width}
++          strokeDasharray={`${String(TICK_MASK.lap)} ${String(TICK_MASK.lap)}`}
++          transform={`rotate(${String(-90 - lead)} ${String(ORBIT_CENTER)} ${String(ORBIT_CENTER)})`}
++          className="orbit-glide"
++          style={{ strokeDashoffset: (1 - progress) * TICK_MASK.lap }}
++        />
++      </mask>
++      {/* Lit ticks: a faint wide stroke for the glow, then the bright tick. */}
++      <g mask={`url(#${lit})`} fill="none" strokeLinecap="round" stroke="var(--color-accent-mark)">
++        <path d={TICK_PATHS.all} strokeWidth={1.2} strokeOpacity={0.14} />
++        <path d={TICK_PATHS.all} strokeWidth={0.55} />
++      </g>
++    </>
++  );
++}
++
++type RingProps = OrbitRing & { r: number; stroke: number; halo: string; entered: boolean };
+ 
+-function Ring({ color, kind, r, stroke, glow, halo }: RingProps) {
++function Ring({ color, kind, r, stroke, halo, entered }: RingProps) {
+   const target = getRingFill(kind);
+-  const fill = useTween(target, 0);
++  const fill = entered ? target : 0;
+   const { value } = habitColor(color);
+-  const total = fill * 2 * Math.PI;
+-  const head = getArcEnd(r, fill);
++
++  // Every arc ends at the circle's path end, which the rotation below keeps at
++  // the head; the dash offset alone sets how far back round the arc reaches.
++  const lap = 2 * Math.PI * r;
++  const arc = (share: number): CSSProperties => ({ strokeDashoffset: (share - 1) * lap });
++  // fill-opacity rather than opacity: it's a plain paint change, where opacity
++  // would give each circle its own compositing step.
++  const show = (visible: boolean, opacity = 1): CSSProperties => ({
++    fillOpacity: visible ? opacity : 0,
++  });
++  const planet = target > 0;
++  const openDot = target === 0 && kind !== "skipped";
+ 
+   return (
+     <g data-ring-fill={target}>
+       <circle
+-        {...center}
+         r={r}
+         fill="none"
+         strokeWidth={stroke}
+         stroke={TRACK}
+         strokeDasharray={kind === "skipped" ? `${String(stroke)} ${String(stroke)}` : undefined}
+       />
+-      {fill > 0.004 ? (
+-        <>
+-          <g filter={glow}>
+-            {TAIL_SEGMENTS.map(({ from, opacity }) => (
+-              <path
+-                key={from}
+-                d={getArcPath(r, from * total, total)}
+-                fill="none"
+-                stroke={value}
+-                strokeWidth={stroke}
+-                strokeOpacity={opacity}
+-              />
+-            ))}
+-            <circle cx={head.x} cy={head.y} r={stroke / 2} fill={value} />
+-          </g>
+-          <circle cx={head.x} cy={head.y} r={stroke * 2.1} fill={halo} opacity={0.55} />
+-          <circle cx={head.x} cy={head.y} r={stroke * 0.68} fill="#fff" />
+-        </>
+-      ) : (
+-        kind !== "skipped" && (
+-          <circle cx={head.x} cy={head.y} r={stroke / 2} fill={value} filter={glow} />
+-        )
+-      )}
++      <g className="orbit-glide" style={{ transform: `rotate(${String(fill * 360 - 90)}deg)` }}>
++        <g fill="none" stroke={value} strokeDasharray={`${String(lap)} ${String(lap)}`}>
++          {/* The glow: the whole comet again in faint, widening bands, which
++              stack into a soft edge like a blur. */}
++          {GLOW_BANDS.map((width) => (
++            <circle
++              key={width}
++              r={r}
++              strokeWidth={stroke * width}
++              strokeOpacity={0.045}
++              className="orbit-glide"
++              style={arc(fill)}
++            />
++          ))}
++          {TAIL_SEGMENTS.map(({ from, opacity }) => (
++            <circle
++              key={from}
++              r={r}
++              strokeWidth={stroke}
++              strokeOpacity={opacity}
++              className="orbit-glide"
++              style={arc((1 - from) * fill)}
++            />
++          ))}
++        </g>
++        {/* The head, at angle 0 before rotating: a dot in the habit's colour
++            with a soft glow, and once done, a white planet with a halo. */}
++        <g className="[&>circle]:transition-[fill-opacity] [&>circle]:duration-300">
++          <circle cx={r} r={stroke * 0.8} fill={value} style={show(planet || openDot, 0.3)} />
++          <circle cx={r} r={stroke / 2} fill={value} style={show(planet || openDot)} />
++          <circle cx={r} r={stroke * 2.1} fill={halo} style={show(planet, 0.55)} />
++          <circle cx={r} r={stroke * 0.68} fill="#fff" style={show(planet)} />
++        </g>
++      </g>
+     </g>
+   );
+ }
+diff --git a/src/components/orbitGeometry.test.ts b/src/components/orbitGeometry.test.ts
+index ae763d0..4f17929 100644
+--- a/src/components/orbitGeometry.test.ts
++++ b/src/components/orbitGeometry.test.ts
+@@ -1,12 +1,12 @@
+ import { describe, expect, it } from "vitest";
+ import {
+   DUST,
+-  getArcEnd,
+-  getArcPath,
+   getOrbitGeometry,
+   getRingFill,
++  getTickPaths,
+   getTicks,
+   TICK_COUNT,
++  TICK_MASK,
+ } from "./orbitGeometry";
+ 
+ describe("getOrbitGeometry", () => {
+@@ -29,25 +29,6 @@ describe("getOrbitGeometry", () => {
+   });
+ });
+ 
+-describe("getArcEnd", () => {
+-  it("ends a full lap and an empty arc at 12 o'clock, and half a lap at 6", () => {
+-    for (const fill of [0, 1]) {
+-      const end = getArcEnd(40, fill);
+-      expect(end.x).toBeCloseTo(50);
+-      expect(end.y).toBeCloseTo(10);
+-    }
+-    const half = getArcEnd(40, 0.5);
+-    expect(half.x).toBeCloseTo(50);
+-    expect(half.y).toBeCloseTo(90);
+-  });
+-
+-  it("runs clockwise", () => {
+-    const quarter = getArcEnd(40, 0.25);
+-    expect(quarter.x).toBeCloseTo(90);
+-    expect(quarter.y).toBeCloseTo(50);
+-  });
+-});
+-
+ describe("getRingFill", () => {
+   it("draws a full lap, half a lap or nothing", () => {
+     expect(getRingFill("full")).toBe(1);
+@@ -57,16 +38,28 @@ describe("getRingFill", () => {
+   });
+ });
+ 
+-describe("getArcPath", () => {
+-  it("draws a short arc as one clockwise segment from 12 o'clock", () => {
+-    expect(getArcPath(40, 0, Math.PI / 2)).toBe("M50.000 10.000 A40 40 0 0 1 90.000 50.000");
++describe("getTickPaths", () => {
++  const segments = (path: string) => path.match(/M/g)?.length ?? 0;
++
++  it("draws every tick once, split into 6 major and 84 minor", () => {
++    const paths = getTickPaths();
++    expect(segments(paths.all)).toBe(TICK_COUNT);
++    expect([segments(paths.major), paths.majorCount]).toEqual([6, 6]);
++    expect([segments(paths.minor), paths.minorCount]).toEqual([84, 84]);
+   });
+ 
+-  it("splits an arc of more than half a lap in two", () => {
+-    const path = getArcPath(40, 0, 2 * Math.PI);
+-    expect(path.match(/A/g)).toHaveLength(2);
+-    expect(path).toContain("A40 40 0 0 1 50.000 90.000");
+-    expect(path.endsWith("50.000 10.000")).toBe(true);
++  it("starts with the 12 o'clock tick, drawn from the inside out", () => {
++    expect(getTickPaths().all.startsWith("M50.000 -0.600L50.000 -3.200")).toBe(true);
++  });
++});
++
++describe("TICK_MASK", () => {
++  it("covers every tick and its glow", () => {
++    const inner = TICK_MASK.radius - TICK_MASK.width / 2;
++    const outer = TICK_MASK.radius + TICK_MASK.width / 2;
++    expect(inner).toBeLessThanOrEqual(50.6 - 0.75);
++    expect(outer).toBeGreaterThanOrEqual(53.2 + 0.75);
++    expect(TICK_MASK.lap).toBeCloseTo(2 * Math.PI * TICK_MASK.radius);
+   });
+ });
+ 
+diff --git a/src/components/orbitGeometry.ts b/src/components/orbitGeometry.ts
+index 3d56192..788a0af 100644
+--- a/src/components/orbitGeometry.ts
++++ b/src/components/orbitGeometry.ts
+@@ -43,25 +43,6 @@ function pointAt(radius: number, angle: number): Point {
+   };
+ }
+ 
+-/** Where an arc that starts at 12 o'clock and runs clockwise for `fill` of a lap ends. */
+-export function getArcEnd(radius: number, fill: number): Point {
+-  return pointAt(radius, fill * 2 * Math.PI);
+-}
+-
+-const formatPoint = ({ x, y }: Point) => `${x.toFixed(3)} ${y.toFixed(3)}`;
+-
+-/**
+- * An SVG path for the clockwise arc between two angles (radians from 12 o'clock).
+- * Arcs over half a lap are split in two, as a single SVG arc can't draw a full one.
+- */
+-export function getArcPath(radius: number, from: number, to: number): string {
+-  const r = String(radius);
+-  const arcTo = (angle: number) => ` A${r} ${r} 0 0 1 ${formatPoint(pointAt(radius, angle))}`;
+-  const start = `M${formatPoint(pointAt(radius, from))}`;
+-  if (to - from > Math.PI) return start + arcTo((from + to) / 2) + arcTo(to);
+-  return start + arcTo(to);
+-}
+-
+ /**
+  * A done ring is drawn as overlapping arcs that all end at the head, each starting
+  * further round: a comet's tail, brightest at the head. `from` is a share of the arc.
+@@ -101,6 +82,40 @@ export function getTicks(progress: number): Tick[] {
+   });
+ }
+ 
++export type TickPaths = {
++  /** Every tick, for the lit layer. */
++  all: string;
++  major: string;
++  minor: string;
++  majorCount: number;
++  minorCount: number;
++};
++
++/** The ticks as SVG path data, one `M…L…` segment per tick: all of them, and split by size. */
++export function getTickPaths(): TickPaths {
++  const all: string[] = [];
++  const major: string[] = [];
++  const minor: string[] = [];
++  for (const tick of getTicks(0)) {
++    const segment = `M${tick.x1.toFixed(3)} ${tick.y1.toFixed(3)}L${tick.x2.toFixed(3)} ${tick.y2.toFixed(3)}`;
++    all.push(segment);
++    (tick.major ? major : minor).push(segment);
++  }
++  return {
++    all: all.join(""),
++    major: major.join(""),
++    minor: minor.join(""),
++    majorCount: major.length,
++    minorCount: minor.length,
++  };
++}
++
++/**
++ * The band lit ticks are revealed through: centred on the ticks and wide enough
++ * for a major tick plus its glow (radius 50.6 to 53.2, and 0.75 more each side).
++ */
++export const TICK_MASK = { radius: 51.9, width: 5, lap: 2 * Math.PI * 51.9 } as const;
++
+ /** A repeatable pseudo-random number from 0 to 1, so the dust is the same on every render. */
+ function noise(seed: number): number {
+   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+diff --git a/src/components/useEntered.ts b/src/components/useEntered.ts
+new file mode 100644
+index 0000000..5f265bc
+--- /dev/null
++++ b/src/components/useEntered.ts
+@@ -0,0 +1,24 @@
++import { useEffect, useState } from "react";
++
++/**
++ * False on the first frame after mounting, then true. Render a CSS-transitioned
++ * value from its start while this is false, so it glides in on mount (a value
++ * that's there from the first paint has nothing to transition from).
++ */
++export function useEntered(): boolean {
++  const [entered, setEntered] = useState(false);
++  useEffect(() => {
++    // Two frames: the first paint must happen with the start value.
++    let second = 0;
++    const first = requestAnimationFrame(() => {
++      second = requestAnimationFrame(() => {
++        setEntered(true);
++      });
++    });
++    return () => {
++      cancelAnimationFrame(first);
++      cancelAnimationFrame(second);
++    };
++  }, []);
++  return entered;
++}
+diff --git a/src/domain/dates.test.ts b/src/domain/dates.test.ts
+index b5c34ce..fe212fb 100644
+--- a/src/domain/dates.test.ts
++++ b/src/domain/dates.test.ts
+@@ -1,3 +1,4 @@
++import { addDays as addDaysToDate, format, isValid, parse } from "date-fns";
+ import { afterEach, describe, expect, it, vi } from "vitest";
+ import {
+   addDays,
+@@ -78,6 +79,54 @@ describe("parseDateKey", () => {
+   });
+ });
+ 
++// parseDateKey and toDateKey are hand-written for speed; they must agree with
++// date-fns, which they replaced, on every input.
++describe("parity with date-fns", () => {
++  const dateFnsParse = (key: string) => {
++    const date = parse(key, "yyyy-MM-dd", new Date(0));
++    return isValid(date) ? date.getTime() : null;
++  };
++
++  it.each([
++    "America/New_York",
++    "America/Sao_Paulo", // DST used to start at midnight
++    "Asia/Karachi",
++    "Australia/Lord_Howe", // 30-minute DST shift
++    "Pacific/Apia", // skipped 2011-12-30 entirely
++  ])("parses and formats every day from 2010 to 2030 the same in %s", (timeZone) => {
++    useTimeZone(timeZone);
++    const mismatches: string[] = [];
++    for (
++      let day = new Date(2010, 0, 1, 12);
++      day.getFullYear() <= 2030;
++      day = addDaysToDate(day, 1)
++    ) {
++      const key = format(day, "yyyy-MM-dd");
++      if (toDateKey(day) !== key) mismatches.push(`format ${key}`);
++      if (parseDateKey(key).getTime() !== dateFnsParse(key)) mismatches.push(`parse ${key}`);
++    }
++    expect(mismatches).toEqual([]);
++  });
++
++  it.each([
++    "2025-02-29",
++    "2024-02-29",
++    "2025-00-10",
++    "2025-13-01",
++    "2025-06-00",
++    "2025-06-31",
++    "0099-03-04",
++  ])("agrees on %s", (key) => {
++    expect(isDateKey(key) ? parseDateKey(key).getTime() : null).toBe(dateFnsParse(key));
++  });
++
++  it("formats years before 1000 with four digits", () => {
++    const date = new Date(0);
++    date.setFullYear(99, 2, 4);
++    expect(toDateKey(date)).toBe(format(date, "yyyy-MM-dd"));
++  });
++});
++
+ describe("toDateKey", () => {
+   it("uses the local date late at night, even when UTC is already tomorrow", () => {
+     // 23:30 in New York is 03:30 UTC the next day.
+diff --git a/src/domain/dates.ts b/src/domain/dates.ts
+index c7fb9c4..930cf12 100644
+--- a/src/domain/dates.ts
++++ b/src/domain/dates.ts
+@@ -4,8 +4,6 @@ import {
+   differenceInCalendarDays,
+   endOfMonth as endOfMonthDate,
+   format,
+-  isValid,
+-  parse,
+   startOfMonth as startOfMonthDate,
+   startOfWeek as startOfWeekDate,
+ } from "date-fns";
+@@ -20,14 +18,36 @@ export type DateKey = string;
+ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+ 
+ const DATE_KEY_FORMAT = "yyyy-MM-dd";
+-const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+-// Only fills fields missing from the parsed string; a full date key overrides all of them.
+-const PARSE_REFERENCE = new Date(0);
++const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
++
++// Date keys are parsed and formatted thousands of times per render (streaks walk
++// every day of a habit's life), so both use plain Date arithmetic: date-fns's
++// generic parse/format is ~40x slower. Results match date-fns exactly
++// (see dates.test.ts), including where DST skips local midnight.
+ 
+ function parseOrNull(value: string): Date | null {
+-  if (!DATE_KEY_PATTERN.test(value)) return null;
+-  const date = parse(value, DATE_KEY_FORMAT, PARSE_REFERENCE);
+-  return isValid(date) ? date : null;
++  const match = DATE_KEY_PATTERN.exec(value);
++  if (!match) return null;
++  const year = Number(match[1]);
++  const month = Number(match[2]) - 1;
++  const day = Number(match[3]);
++  if (month < 0 || month > 11 || day < 1 || day > daysInMonth(year, month)) return null;
++  const date = new Date(0);
++  // setFullYear (unlike the Date constructor) keeps years 0-99 as written.
++  date.setFullYear(year, month, day);
++  date.setHours(0, 0, 0, 0);
++  return date;
++}
++
++const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
++
++function daysInMonth(year: number, month: number): number {
++  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
++  return month === 1 && leap ? 29 : (DAYS_IN_MONTH[month] ?? 31);
++}
++
++function pad(value: number, length: number): string {
++  return String(value).padStart(length, "0");
+ }
+ 
+ export function isDateKey(value: string): boolean {
+@@ -45,7 +65,11 @@ export function parseDateKey(key: DateKey): Date {
+ 
+ /** The local calendar date of `date`, never its UTC date. */
+ export function toDateKey(date: Date): DateKey {
+-  return format(date, DATE_KEY_FORMAT);
++  const year = date.getFullYear();
++  // Same output as date-fns for every 4-digit year; anything else (or an
++  // invalid date, which date-fns rejects) goes through date-fns.
++  if (!(year >= 0 && year <= 9999)) return format(date, DATE_KEY_FORMAT);
++  return `${pad(year, 4)}-${pad(date.getMonth() + 1, 2)}-${pad(date.getDate(), 2)}`;
+ }
+ 
+ /** The current local date. The only clock read in the domain layer, so tests can mock it. */
+diff --git a/src/features/today/TodayScreen.test.tsx b/src/features/today/TodayScreen.test.tsx
+index 05c897a..97f2d07 100644
+--- a/src/features/today/TodayScreen.test.tsx
++++ b/src/features/today/TodayScreen.test.tsx
+@@ -114,6 +114,57 @@ describe("TodayScreen", () => {
+     expect(await repository.listCompletions()).toEqual([]);
+   });
+ 
++  it("shows a tap straight away, before the database has saved it", async () => {
++    const repository = createTestRepository();
++    await repository.createHabit(reading);
++    await repository.createHabit(running);
++    const gate: { open?: (value: undefined) => void } = {};
++    const writeAllowed = new Promise<undefined>((resolve) => {
++      gate.open = resolve;
++    });
++    const slow = {
++      ...repository,
++      setCompletion: async (input: Parameters<typeof repository.setCompletion>[0]) => {
++        await writeAllowed;
++        return repository.setCompletion(input);
++      },
++    };
++    const { user } = renderApp("/", slow);
++    await screen.findByText("Read");
++
++    await user.click(tile("Read"));
++
++    // Not saved yet, but already shown as done.
++    expect(await repository.listCompletions()).toEqual([]);
++    expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
++    expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 closed");
++
++    gate.open?.(undefined);
++    await waitFor(async () => {
++      expect(await repository.listCompletions()).toMatchObject([{ kind: "full" }]);
++    });
++    expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
++  });
++
++  it("goes back to what was saved if a tap can't be saved", async () => {
++    const repository = createTestRepository();
++    await repository.createHabit(reading);
++    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
++    const failing = {
++      ...repository,
++      setCompletion: () => Promise.reject(new Error("Disk full")),
++    };
++    const { user } = renderApp("/", failing);
++    await screen.findByText("Read");
++
++    await user.click(tile("Read"));
++
++    await waitFor(() => {
++      expect(tile("Read")).toHaveAttribute("aria-pressed", "false");
++    });
++    expect(error).toHaveBeenCalledWith("Couldn't update habit", expect.any(Error));
++  });
++
+   it("celebrates when everything due is done", async () => {
+     const repository = createTestRepository();
+     await repository.createHabit(reading);
+diff --git a/src/features/today/TodayScreen.tsx b/src/features/today/TodayScreen.tsx
+index ad13c40..952e920 100644
+--- a/src/features/today/TodayScreen.tsx
++++ b/src/features/today/TodayScreen.tsx
+@@ -1,30 +1,32 @@
+ import clsx from "clsx";
+ import { format, getDayOfYear } from "date-fns";
+ import { Check } from "lucide-react";
+-import { useMemo, useState, type ReactNode } from "react";
++import { memo, useMemo, useState, type ReactNode } from "react";
+ import { useToday } from "../../app/useToday";
+ import { EmptyState } from "../../components/EmptyState";
+ import type { StyleWithVars } from "../../components/habitColors";
+ import { OrbitRings } from "../../components/OrbitRings";
+ import { Screen } from "../../components/Screen";
+-import { useReducedMotion } from "../../components/useReducedMotion";
+ import { useRepository } from "../../data/RepositoryContext";
+ import { useCompletions, useHabits } from "../../data/useData";
+ import { isDone } from "../../domain/completions";
+ import { parseDateKey } from "../../domain/dates";
+-import { getLongestCurrentRun, type TodayProgress } from "../../domain/stats";
++import type { Completion } from "../../domain/habit";
++import type { TodayProgress } from "../../domain/stats";
+ import { useSettings } from "../../store/settingsStore";
+ import { AddHabitLink } from "../habits/AddHabitLink";
+ import { ReviewPrompt } from "../review/ReviewPrompt";
+ import { HabitTile } from "./HabitTile";
+ import { LogSheet } from "./LogSheet";
+ import { Welcome } from "./Welcome";
+-import { buildTodayList, getDayPercent, type TodayItem } from "./todayList";
++import { buildTodayList, getDayPercent, getLongestRun, type TodayItem } from "./todayList";
++import { usePendingCompletions } from "./usePendingCompletions";
+ 
+ export function TodayScreen() {
+   const today = useToday();
+   const habits = useHabits();
+-  const completions = useCompletions();
++  // Taps show straight away, before the database has saved them.
++  const { completions, track } = usePendingCompletions(useCompletions());
+   const repository = useRepository();
+   const welcomeDismissed = useSettings((state) => state.welcomeDismissed);
+   const [optionsFor, setOptionsFor] = useState<string | null>(null);
+@@ -34,21 +36,24 @@ export function TodayScreen() {
+     () => (habits && completions ? buildTodayList(habits, completions, today) : undefined),
+     [habits, completions, today],
+   );
+-  const run = useMemo(
+-    () => (habits && completions ? getLongestCurrentRun(habits, completions, today) : 0),
+-    [habits, completions, today],
+-  );
++  const run = list ? getLongestRun(list) : 0;
+   const optionsItem = list && [...list.due, ...list.other].find((i) => i.habit.id === optionsFor);
+ 
+   const toggle = ({ habit, completion }: TodayItem) => {
+-    const change = isDone(completion)
+-      ? repository.clearCompletion(habit.id, today)
+-      : repository.setCompletion({
++    const note = completion?.note;
++    const next: Completion | null = isDone(completion)
++      ? null
++      : {
++          id: completion?.id ?? `pending-${habit.id}`,
+           habitId: habit.id,
+           date: today,
+           kind: "full",
+-          note: completion?.note,
+-        });
++          ...(note === undefined ? {} : { note }),
++        };
++    const change = next
++      ? repository.setCompletion({ habitId: habit.id, date: today, kind: "full", note })
++      : repository.clearCompletion(habit.id, today);
++    track({ habitId: habit.id, date: today, completion: next }, change);
+     change.catch((error: unknown) => {
+       console.error("Couldn't update habit", error);
+     });
+@@ -160,30 +165,26 @@ function RunBadge({ days }: { days: number }) {
+   );
+ }
+ 
+-/** A ring with a planet circling it, as on the run badge in the design. */
++/**
++ * A ring with a planet circling it, as on the run badge in the design. The
++ * planet spins on its own layer (a CSS animation the GPU runs without repainting).
++ */
+ function OrbitIcon() {
+-  const reduced = useReducedMotion();
+   return (
+-    <svg
+-      viewBox="0 0 20 20"
++    <span
+       aria-hidden="true"
+-      className="size-4.5 overflow-visible text-accent-text drop-shadow-[0_0_4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]"
++      className="relative size-4.5 text-accent-text drop-shadow-[0_0_4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]"
+     >
+-      <circle cx="10" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
+-      <g>
+-        <circle cx="10" cy="4" r="2.5" fill="currentColor" />
+-        {!reduced && (
+-          <animateTransform
+-            attributeName="transform"
+-            type="rotate"
+-            from="0 10 11"
+-            to="360 10 11"
+-            dur="9s"
+-            repeatCount="indefinite"
+-          />
+-        )}
+-      </g>
+-    </svg>
++      <svg viewBox="0 0 20 20" className="absolute inset-0 size-full overflow-visible">
++        <circle cx="10" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
++      </svg>
++      {/* Turns about the ring's centre, (10, 11) in the 20 x 20 box. */}
++      <span className="absolute inset-0 origin-[50%_55%] animate-planet">
++        <svg viewBox="0 0 20 20" className="size-full overflow-visible">
++          <circle cx="10" cy="4" r="2.5" fill="currentColor" />
++        </svg>
++      </span>
++    </span>
+   );
+ }
+ 
+@@ -224,7 +225,15 @@ function Burst() {
+   );
+ }
+ 
+-function OrbitCard({ items, progress }: { items: TodayItem[]; progress: TodayProgress }) {
++// Memoised: when Today re-renders with the same list (e.g. the database echoing a
++// tap that's already showing), the rings aren't redrawn mid-glide.
++const OrbitCard = memo(function OrbitCard({
++  items,
++  progress,
++}: {
++  items: TodayItem[];
++  progress: TodayProgress;
++}) {
+   const { closed, minimum, due } = progress;
+   // Only full completions close an orbit; the minimum version counts for the
+   // streak but is shown separately.
+@@ -319,7 +328,7 @@ function OrbitCard({ items, progress }: { items: TodayItem[]; progress: TodayPro
+       {due > 0 && <ProgressStrip closed={closed} minimum={minimum} open={open} />}
+     </div>
+   );
+-}
++});
+ 
+ /** Closed, minimum and open counts under the rings. */
+ function ProgressStrip({ closed, minimum, open }: Record<"closed" | "minimum" | "open", number>) {
+@@ -348,7 +357,7 @@ function ProgressStrip({ closed, minimum, open }: Record<"closed" | "minimum" |
+     },
+   ];
+   return (
+-    <div aria-hidden="true" className="card grid w-full grid-cols-3 rounded-tile backdrop-blur-md">
++    <div aria-hidden="true" className="card grid w-full grid-cols-3 rounded-tile">
+       {cells.map(({ count, label, mark }, index) => (
+         <div
+           key={label}
+diff --git a/src/features/today/pendingCompletions.test.ts b/src/features/today/pendingCompletions.test.ts
+new file mode 100644
+index 0000000..c2fa5ac
+--- /dev/null
++++ b/src/features/today/pendingCompletions.test.ts
+@@ -0,0 +1,119 @@
++import { describe, expect, it } from "vitest";
++import type { Completion } from "../../domain/habit";
++import {
++  applyPending,
++  NO_PENDING,
++  pendingKey,
++  sameCompletions,
++  settlePending,
++  type PendingCompletion,
++  type PendingCompletions,
++} from "./pendingCompletions";
++
++const saved: Completion[] = [
++  { id: "1", habitId: "read", date: "2025-01-06", kind: "full" },
++  { id: "2", habitId: "run", date: "2025-01-07", kind: "minimum", note: "Short" },
++  { id: "3", habitId: "read", date: "2025-01-08", kind: "skipped" },
++];
++
++function pendingOf(...changes: PendingCompletion[]): PendingCompletions {
++  return new Map(changes.map((change) => [pendingKey(change.habitId, change.date), change]));
++}
++
++const done = (
++  habitId: string,
++  date: string,
++  extra: Partial<Completion> = {},
++): PendingCompletion => ({
++  habitId,
++  date,
++  completion: { id: `pending-${habitId}`, habitId, date, kind: "full", ...extra },
++});
++const cleared = (habitId: string, date: string): PendingCompletion => ({
++  habitId,
++  date,
++  completion: null,
++});
++
++describe("applyPending", () => {
++  it("returns the saved list itself when nothing is pending", () => {
++    expect(applyPending(saved, NO_PENDING)).toBe(saved);
++  });
++
++  it("replaces a saved day, adds a new one and removes a cleared one, keeping date order", () => {
++    const result = applyPending(
++      saved,
++      pendingOf(
++        done("read", "2025-01-08"),
++        done("run", "2025-01-05"),
++        cleared("read", "2025-01-06"),
++      ),
++    );
++
++    expect(result.map(({ habitId, date, kind }) => `${habitId} ${date} ${kind}`)).toEqual([
++      "run 2025-01-05 full",
++      "run 2025-01-07 minimum",
++      "read 2025-01-08 full",
++    ]);
++  });
++
++  it("leaves the saved list untouched", () => {
++    const copy = structuredClone(saved);
++    applyPending(saved, pendingOf(cleared("read", "2025-01-06")));
++    expect(saved).toEqual(copy);
++  });
++});
++
++describe("sameCompletions", () => {
++  it("matches the same days in any order, ignoring ids", () => {
++    const shuffled = [saved[2], saved[0], { ...saved[1], id: "pending-run" }] as Completion[];
++    expect(sameCompletions(saved, shuffled)).toBe(true);
++  });
++
++  it("notices a different kind, note or day", () => {
++    const changed = (index: number, change: Partial<Completion>) =>
++      saved.map((completion, i) => (i === index ? { ...completion, ...change } : completion));
++
++    expect(sameCompletions(saved, changed(0, { kind: "minimum" }))).toBe(false);
++    expect(sameCompletions(saved, changed(1, { note: "Long" }))).toBe(false);
++    expect(sameCompletions(saved, changed(1, { note: undefined }))).toBe(false);
++    expect(sameCompletions(saved, changed(2, { date: "2025-01-09" }))).toBe(false);
++    expect(sameCompletions(saved, saved.slice(1))).toBe(false);
++  });
++
++  it("doesn't treat a list with a day twice as equal", () => {
++    const twice = [saved[0], saved[0], saved[1]] as Completion[];
++    expect(sameCompletions(twice, [saved[0], saved[1], saved[2]] as Completion[])).toBe(false);
++  });
++});
++
++describe("settlePending", () => {
++  it("drops changes the saved completions now reflect", () => {
++    const pending = pendingOf(
++      done("read", "2025-01-06"), // saved as full
++      cleared("run", "2025-01-01"), // nothing saved that day
++      done("read", "2025-01-08"), // still skipped in the database
++    );
++
++    const settled = settlePending(pending, saved);
++
++    expect([...settled.keys()]).toEqual([pendingKey("read", "2025-01-08")]);
++  });
++
++  it("compares the note as well as the kind", () => {
++    const pending = pendingOf(done("run", "2025-01-07", { kind: "minimum", note: "Longer" }));
++
++    expect(settlePending(pending, saved)).toBe(pending);
++  });
++
++  it("keeps a clear until the completion is gone", () => {
++    const pending = pendingOf(cleared("read", "2025-01-06"));
++
++    expect(settlePending(pending, saved)).toBe(pending);
++    expect(settlePending(pending, saved.slice(1)).size).toBe(0);
++  });
++
++  it("returns the same map when nothing settles", () => {
++    expect(settlePending(NO_PENDING, saved)).toBe(NO_PENDING);
++  });
++});
+diff --git a/src/features/today/pendingCompletions.ts b/src/features/today/pendingCompletions.ts
+new file mode 100644
+index 0000000..199ccd5
+--- /dev/null
++++ b/src/features/today/pendingCompletions.ts
+@@ -0,0 +1,92 @@
++import type { DateKey } from "../../domain/dates";
++import type { Completion } from "../../domain/habit";
++
++// A tap shows straight away: the change is laid over the saved completions until
++// the database reports it back. Writing to IndexedDB and re-reading every
++// completion takes long enough on a phone to make the orbit feel slow to respond.
++
++/** A change to one habit's day that the database hasn't reported back yet. */
++export type PendingCompletion = {
++  habitId: string;
++  date: DateKey;
++  /** The day's completion once saved, or null when it's being cleared. */
++  completion: Completion | null;
++};
++
++export type PendingCompletions = ReadonlyMap<string, PendingCompletion>;
++
++export const NO_PENDING: PendingCompletions = new Map();
++
++export function pendingKey(habitId: string, date: DateKey): string {
++  return `${habitId}|${date}`;
++}
++
++/**
++ * The saved completions with pending changes applied, still sorted by date.
++ * Returns `saved` itself when nothing is pending, so memoised work isn't redone.
++ */
++export function applyPending(
++  saved: readonly Completion[],
++  pending: PendingCompletions,
++): readonly Completion[] {
++  if (pending.size === 0) return saved;
++  const result = saved.filter(({ habitId, date }) => !pending.has(pendingKey(habitId, date)));
++  for (const { completion } of pending.values()) {
++    if (completion) result.push(completion);
++  }
++  // Stable, so same-day completions keep their saved order.
++  return result.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
++}
++
++function describe({ kind, note }: Completion): string {
++  return note === undefined ? kind : `${kind}:${note}`;
++}
++
++/**
++ * Whether two lists hold the same completions: the same kind and note for each
++ * habit and day, in any order. Ids are ignored (a pending completion has a
++ * stand-in id until it's saved); the Today screen never uses them.
++ */
++export function sameCompletions(a: readonly Completion[], b: readonly Completion[]): boolean {
++  if (a === b) return true;
++  if (a.length !== b.length) return false;
++  const byKey = new Map<string, string>();
++  for (const completion of a) {
++    byKey.set(pendingKey(completion.habitId, completion.date), describe(completion));
++  }
++  // A day listed twice: don't try to be clever.
++  if (byKey.size !== a.length) return false;
++  return b.every(
++    (completion) =>
++      byKey.get(pendingKey(completion.habitId, completion.date)) === describe(completion),
++  );
++}
++
++function matches(saved: Completion | undefined, expected: Completion | null): boolean {
++  if (!saved || !expected) return !saved && !expected;
++  return saved.kind === expected.kind && saved.note === expected.note;
++}
++
++/**
++ * Drops the pending changes that the saved completions now reflect. Returns
++ * `pending` itself when nothing was dropped.
++ */
++export function settlePending(
++  pending: PendingCompletions,
++  saved: readonly Completion[],
++): PendingCompletions {
++  if (pending.size === 0) return pending;
++  const savedByKey = new Map<string, Completion>();
++  for (const completion of saved) {
++    const key = pendingKey(completion.habitId, completion.date);
++    if (pending.has(key)) savedByKey.set(key, completion);
++  }
++  let next: Map<string, PendingCompletion> | undefined;
++  for (const [key, change] of pending) {
++    if (matches(savedByKey.get(key), change.completion)) {
++      next ??= new Map(pending);
++      next.delete(key);
++    }
++  }
++  return next ?? pending;
++}
+diff --git a/src/features/today/todayList.test.ts b/src/features/today/todayList.test.ts
+index d8f5163..4642bf1 100644
+--- a/src/features/today/todayList.test.ts
++++ b/src/features/today/todayList.test.ts
+@@ -1,7 +1,14 @@
+ import { describe, expect, it } from "vitest";
+ import { eachDay } from "../../domain/dates";
+ import { makeCompletions, makeHabit, on } from "../../test/factories";
+-import { buildTodayList, getDayPercent, summarizeItem, type TodayItem } from "./todayList";
++import { getLongestCurrentRun } from "../../domain/stats";
++import {
++  buildTodayList,
++  getDayPercent,
++  getLongestRun,
++  summarizeItem,
++  type TodayItem,
++} from "./todayList";
+ 
+ const today = "2025-01-08"; // Wednesday
+ 
+@@ -133,3 +140,30 @@ describe("getDayPercent", () => {
+     expect(getDayPercent({ closed: 0, minimum: 0, due: 0 })).toBe(0);
+   });
+ });
++
++describe("getLongestRun", () => {
++  it("matches getLongestCurrentRun for the same habits", () => {
++    const habits = [
++      makeHabit({ id: "daily" }),
++      makeHabit({ id: "wed", schedule: { type: "days", days: [3] } }),
++      makeHabit({ id: "fri", schedule: { type: "days", days: [5] } }), // not due today
++      makeHabit({ id: "weekly", schedule: { type: "weekly", timesPerWeek: 1 } }),
++      makeHabit({ id: "archived", archived: true }),
++    ];
++    const completions = [
++      ...makeCompletions("daily", on("full", ...eachDay("2025-01-04", today))),
++      ...makeCompletions("fri", on("full", "2025-01-03")),
++      ...makeCompletions("weekly", on("full", "2025-01-02", "2025-01-07")),
++      ...makeCompletions("archived", on("full", ...eachDay("2025-01-01", today))),
++    ];
++
++    const list = buildTodayList(habits, completions, today);
++
++    expect(getLongestRun(list)).toBe(getLongestCurrentRun(habits, completions, today));
++    expect(getLongestRun(list)).toBe(5);
++  });
++
++  it("is zero with no runs", () => {
++    expect(getLongestRun(buildTodayList([makeHabit()], [], today))).toBe(0);
++  });
++});
+diff --git a/src/features/today/todayList.ts b/src/features/today/todayList.ts
+index d81f962..ea48118 100644
+--- a/src/features/today/todayList.ts
++++ b/src/features/today/todayList.ts
+@@ -91,6 +91,18 @@ export function summarizeItem({ habit, streak, week }: TodayItem): ItemSummary {
+   return { run, details: details.join(" · "), tone };
+ }
+ 
++/**
++ * The longest current day run across the list, as `getLongestCurrentRun` gives
++ * for the same habits, reusing the streaks the list already worked out.
++ */
++export function getLongestRun({ due, other }: TodayList): number {
++  let longest = 0;
++  for (const { streak } of [...due, ...other]) {
++    if (streak.unit === "days") longest = Math.max(longest, streak.current);
++  }
++  return longest;
++}
++
+ /**
+  * How much of today is done, 0 to 1: closed habits count fully and the minimum
+  * version half, as on the rings. Zero when nothing is due.
+diff --git a/src/features/today/usePendingCompletions.ts b/src/features/today/usePendingCompletions.ts
+new file mode 100644
+index 0000000..95d52b8
+--- /dev/null
++++ b/src/features/today/usePendingCompletions.ts
+@@ -0,0 +1,71 @@
++import { useCallback, useMemo, useState } from "react";
++import type { Completion } from "../../domain/habit";
++import {
++  applyPending,
++  NO_PENDING,
++  pendingKey,
++  sameCompletions,
++  settlePending,
++  type PendingCompletion,
++  type PendingCompletions,
++} from "./pendingCompletions";
++
++/**
++ * After a write succeeds, how long a pending change may outlive it. Normally the
++ * database reports the change back within milliseconds; this only matters if
++ * something else changed the same day first, so the two never match.
++ */
++const SETTLE_TIMEOUT_MS = 3000;
++
++type Result = {
++  /** The saved completions with the user's latest changes applied, or undefined while loading. */
++  completions: readonly Completion[] | undefined;
++  /** Shows `change` now. It's dropped once `saved` reflects it, or straight away if `write` fails. */
++  track: (change: PendingCompletion, write: Promise<unknown>) => void;
++};
++
++export function usePendingCompletions(saved: readonly Completion[] | undefined): Result {
++  const [pending, setPending] = useState<PendingCompletions>(NO_PENDING);
++  const [lastSaved, setLastSaved] = useState(saved);
++
++  // New data from the database: forget the changes it now reflects. Adjusting
++  // state during render (rather than in an effect) avoids a frame showing both.
++  if (saved !== lastSaved) {
++    setLastSaved(saved);
++    if (saved) setPending(settlePending(pending, saved));
++  }
++
++  const merged = useMemo(() => saved && applyPending(saved, pending), [saved, pending]);
++
++  // When the database reports back a tap that's already showing, keep the list
++  // the screen already has, so nothing is recalculated or redrawn while the
++  // orbit is still gliding.
++  const [completions, setCompletions] = useState(merged);
++  const unchanged =
++    merged === completions ||
++    (merged !== undefined && completions !== undefined && sameCompletions(merged, completions));
++  if (!unchanged) setCompletions(merged);
++
++  const track = useCallback((change: PendingCompletion, write: Promise<unknown>) => {
++    const key = pendingKey(change.habitId, change.date);
++    setPending((current) => new Map(current).set(key, change));
++    const forget = () => {
++      setPending((current) => {
++        // A later change to the same day replaced this one; leave it be.
++        if (current.get(key) !== change) return current;
++        const next = new Map(current);
++        next.delete(key);
++        return next;
++      });
++    };
++    write.then(
++      () => {
++        setTimeout(forget, SETTLE_TIMEOUT_MS);
++      },
++      // The caller reports the error; the day just shows what was saved.
++      forget,
++    );
++  }, []);
++
++  return { completions: unchanged ? completions : merged, track };
++}
+diff --git a/src/index.css b/src/index.css
+index a02f6a3..c7c6ddb 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -96,6 +96,9 @@
+   --animate-sheet-in: sheet-in 0.38s cubic-bezier(0.2, 0.95, 0.25, 1);
+   --animate-orbit: orbit 4.5s linear infinite;
+   --animate-orbit-slow: orbit 7s linear infinite;
++  /* The dust drifting round the middle of the Today rings, and the run badge's planet. */
++  --animate-dust: orbit 140s linear infinite;
++  --animate-planet: orbit 9s linear infinite;
+   --animate-shine: shine 2.6s ease-in-out infinite;
+   --animate-breathe: breathe 3.2s ease-in-out infinite;
+   --animate-blink: blink 2.4s ease-in-out infinite;
+@@ -487,6 +490,14 @@
+   box-shadow: 0 0 --spacing(2) color-mix(in oklab, currentColor 55%, transparent);
+ }
+ 
++/* The Today rings' arcs, planets and lit ticks gliding to a new length. Only
++   properties the browser can animate without React re-rendering every frame. */
++@utility orbit-glide {
++  transition-property: stroke-dashoffset, transform, fill-opacity;
++  transition-duration: 800ms;
++  transition-timing-function: var(--ease-out-soft);
++}
++
+ /* Keeps a 44px touch target around a control drawn smaller than that. */
+ @utility touch-target {
+   position: relative;
+@@ -637,7 +648,7 @@
+ }
+ 
+ /* Motion is decoration here: with reduced motion everything jumps straight to its
+-   end state. SVG animations and JS tweens check `useReducedMotion` instead. */
++   end state. JS tweens check `useReducedMotion` instead. */
+ @media (prefers-reduced-motion: reduce) {
+   *,
+   ::before,

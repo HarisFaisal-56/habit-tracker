@@ -1,3 +1,4 @@
+import { addDays as addDaysToDate, format, isValid, parse } from "date-fns";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addDays,
@@ -75,6 +76,54 @@ describe("parseDateKey", () => {
     expect(addDays("2018-11-04", 1)).toBe("2018-11-05");
     expect(daysBetween("2018-11-03", "2018-11-05")).toBe(2);
     expect(eachDay("2018-11-03", "2018-11-05")).toEqual(["2018-11-03", "2018-11-04", "2018-11-05"]);
+  });
+});
+
+// parseDateKey and toDateKey are hand-written for speed; they must agree with
+// date-fns, which they replaced, on every input.
+describe("parity with date-fns", () => {
+  const dateFnsParse = (key: string) => {
+    const date = parse(key, "yyyy-MM-dd", new Date(0));
+    return isValid(date) ? date.getTime() : null;
+  };
+
+  it.each([
+    "America/New_York",
+    "America/Sao_Paulo", // DST used to start at midnight
+    "Asia/Karachi",
+    "Australia/Lord_Howe", // 30-minute DST shift
+    "Pacific/Apia", // skipped 2011-12-30 entirely
+  ])("parses and formats every day from 2010 to 2030 the same in %s", (timeZone) => {
+    useTimeZone(timeZone);
+    const mismatches: string[] = [];
+    for (
+      let day = new Date(2010, 0, 1, 12);
+      day.getFullYear() <= 2030;
+      day = addDaysToDate(day, 1)
+    ) {
+      const key = format(day, "yyyy-MM-dd");
+      if (toDateKey(day) !== key) mismatches.push(`format ${key}`);
+      if (parseDateKey(key).getTime() !== dateFnsParse(key)) mismatches.push(`parse ${key}`);
+    }
+    expect(mismatches).toEqual([]);
+  });
+
+  it.each([
+    "2025-02-29",
+    "2024-02-29",
+    "2025-00-10",
+    "2025-13-01",
+    "2025-06-00",
+    "2025-06-31",
+    "0099-03-04",
+  ])("agrees on %s", (key) => {
+    expect(isDateKey(key) ? parseDateKey(key).getTime() : null).toBe(dateFnsParse(key));
+  });
+
+  it("formats years before 1000 with four digits", () => {
+    const date = new Date(0);
+    date.setFullYear(99, 2, 4);
+    expect(toDateKey(date)).toBe(format(date, "yyyy-MM-dd"));
   });
 });
 

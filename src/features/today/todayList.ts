@@ -92,6 +92,18 @@ export function summarizeItem({ habit, streak, week }: TodayItem): ItemSummary {
 }
 
 /**
+ * The longest current day run across the list, as `getLongestCurrentRun` gives
+ * for the same habits, reusing the streaks the list already worked out.
+ */
+export function getLongestRun({ due, other }: TodayList): number {
+  let longest = 0;
+  for (const { streak } of [...due, ...other]) {
+    if (streak.unit === "days") longest = Math.max(longest, streak.current);
+  }
+  return longest;
+}
+
+/**
  * How much of today is done, 0 to 1: closed habits count fully and the minimum
  * version half, as on the rings. Zero when nothing is due.
  */

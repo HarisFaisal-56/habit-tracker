@@ -96,6 +96,9 @@
   --animate-sheet-in: sheet-in 0.38s cubic-bezier(0.2, 0.95, 0.25, 1);
   --animate-orbit: orbit 4.5s linear infinite;
   --animate-orbit-slow: orbit 7s linear infinite;
+  /* The dust drifting round the middle of the Today rings, and the run badge's planet. */
+  --animate-dust: orbit 140s linear infinite;
+  --animate-planet: orbit 9s linear infinite;
   --animate-shine: shine 2.6s ease-in-out infinite;
   --animate-breathe: breathe 3.2s ease-in-out infinite;
   --animate-blink: blink 2.4s ease-in-out infinite;
@@ -487,6 +490,14 @@
   box-shadow: 0 0 --spacing(2) color-mix(in oklab, currentColor 55%, transparent);
 }
 
+/* The Today rings' arcs, planets and lit ticks gliding to a new length. Only
+   properties the browser can animate without React re-rendering every frame. */
+@utility orbit-glide {
+  transition-property: stroke-dashoffset, transform, fill-opacity;
+  transition-duration: 800ms;
+  transition-timing-function: var(--ease-out-soft);
+}
+
 /* Keeps a 44px touch target around a control drawn smaller than that. */
 @utility touch-target {
   position: relative;
@@ -637,7 +648,7 @@
 }
 
 /* Motion is decoration here: with reduced motion everything jumps straight to its
-   end state. SVG animations and JS tweens check `useReducedMotion` instead. */
+   end state. JS tweens check `useReducedMotion` instead. */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

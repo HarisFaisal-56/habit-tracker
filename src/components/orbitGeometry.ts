@@ -43,25 +43,6 @@ function pointAt(radius: number, angle: number): Point {
   };
 }
 
-/** Where an arc that starts at 12 o'clock and runs clockwise for `fill` of a lap ends. */
-export function getArcEnd(radius: number, fill: number): Point {
-  return pointAt(radius, fill * 2 * Math.PI);
-}
-
-const formatPoint = ({ x, y }: Point) => `${x.toFixed(3)} ${y.toFixed(3)}`;
-
-/**
- * An SVG path for the clockwise arc between two angles (radians from 12 o'clock).
- * Arcs over half a lap are split in two, as a single SVG arc can't draw a full one.
- */
-export function getArcPath(radius: number, from: number, to: number): string {
-  const r = String(radius);
-  const arcTo = (angle: number) => ` A${r} ${r} 0 0 1 ${formatPoint(pointAt(radius, angle))}`;
-  const start = `M${formatPoint(pointAt(radius, from))}`;
-  if (to - from > Math.PI) return start + arcTo((from + to) / 2) + arcTo(to);
-  return start + arcTo(to);
-}
-
 /**
  * A done ring is drawn as overlapping arcs that all end at the head, each starting
  * further round: a comet's tail, brightest at the head. `from` is a share of the arc.
@@ -100,6 +81,40 @@ export function getTicks(progress: number): Tick[] {
     };
   });
 }
+
+export type TickPaths = {
+  /** Every tick, for the lit layer. */
+  all: string;
+  major: string;
+  minor: string;
+  majorCount: number;
+  minorCount: number;
+};
+
+/** The ticks as SVG path data, one `M…L…` segment per tick: all of them, and split by size. */
+export function getTickPaths(): TickPaths {
+  const all: string[] = [];
+  const major: string[] = [];
+  const minor: string[] = [];
+  for (const tick of getTicks(0)) {
+    const segment = `M${tick.x1.toFixed(3)} ${tick.y1.toFixed(3)}L${tick.x2.toFixed(3)} ${tick.y2.toFixed(3)}`;
+    all.push(segment);
+    (tick.major ? major : minor).push(segment);
+  }
+  return {
+    all: all.join(""),
+    major: major.join(""),
+    minor: minor.join(""),
+    majorCount: major.length,
+    minorCount: minor.length,
+  };
+}
+
+/**
+ * The band lit ticks are revealed through: centred on the ticks and wide enough
+ * for a major tick plus its glow (radius 50.6 to 53.2, and 0.75 more each side).
+ */
+export const TICK_MASK = { radius: 51.9, width: 5, lap: 2 * Math.PI * 51.9 } as const;
 
 /** A repeatable pseudo-random number from 0 to 1, so the dust is the same on every render. */
 function noise(seed: number): number {

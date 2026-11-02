@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   DUST,
-  getArcEnd,
-  getArcPath,
   getOrbitGeometry,
   getRingFill,
+  getTickPaths,
   getTicks,
   TICK_COUNT,
+  TICK_MASK,
 } from "./orbitGeometry";
 
 describe("getOrbitGeometry", () => {
@@ -29,25 +29,6 @@ describe("getOrbitGeometry", () => {
   });
 });
 
-describe("getArcEnd", () => {
-  it("ends a full lap and an empty arc at 12 o'clock, and half a lap at 6", () => {
-    for (const fill of [0, 1]) {
-      const end = getArcEnd(40, fill);
-      expect(end.x).toBeCloseTo(50);
-      expect(end.y).toBeCloseTo(10);
-    }
-    const half = getArcEnd(40, 0.5);
-    expect(half.x).toBeCloseTo(50);
-    expect(half.y).toBeCloseTo(90);
-  });
-
-  it("runs clockwise", () => {
-    const quarter = getArcEnd(40, 0.25);
-    expect(quarter.x).toBeCloseTo(90);
-    expect(quarter.y).toBeCloseTo(50);
-  });
-});
-
 describe("getRingFill", () => {
   it("draws a full lap, half a lap or nothing", () => {
     expect(getRingFill("full")).toBe(1);
@@ -57,16 +38,28 @@ describe("getRingFill", () => {
   });
 });
 
-describe("getArcPath", () => {
-  it("draws a short arc as one clockwise segment from 12 o'clock", () => {
-    expect(getArcPath(40, 0, Math.PI / 2)).toBe("M50.000 10.000 A40 40 0 0 1 90.000 50.000");
+describe("getTickPaths", () => {
+  const segments = (path: string) => path.match(/M/g)?.length ?? 0;
+
+  it("draws every tick once, split into 6 major and 84 minor", () => {
+    const paths = getTickPaths();
+    expect(segments(paths.all)).toBe(TICK_COUNT);
+    expect([segments(paths.major), paths.majorCount]).toEqual([6, 6]);
+    expect([segments(paths.minor), paths.minorCount]).toEqual([84, 84]);
   });
 
-  it("splits an arc of more than half a lap in two", () => {
-    const path = getArcPath(40, 0, 2 * Math.PI);
-    expect(path.match(/A/g)).toHaveLength(2);
-    expect(path).toContain("A40 40 0 0 1 50.000 90.000");
-    expect(path.endsWith("50.000 10.000")).toBe(true);
+  it("starts with the 12 o'clock tick, drawn from the inside out", () => {
+    expect(getTickPaths().all.startsWith("M50.000 -0.600L50.000 -3.200")).toBe(true);
+  });
+});
+
+describe("TICK_MASK", () => {
+  it("covers every tick and its glow", () => {
+    const inner = TICK_MASK.radius - TICK_MASK.width / 2;
+    const outer = TICK_MASK.radius + TICK_MASK.width / 2;
+    expect(inner).toBeLessThanOrEqual(50.6 - 0.75);
+    expect(outer).toBeGreaterThanOrEqual(53.2 + 0.75);
+    expect(TICK_MASK.lap).toBeCloseTo(2 * Math.PI * TICK_MASK.radius);
   });
 });
 

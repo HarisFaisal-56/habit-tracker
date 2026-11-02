@@ -114,6 +114,57 @@ describe("TodayScreen", () => {
     expect(await repository.listCompletions()).toEqual([]);
   });
 
+  it("shows a tap straight away, before the database has saved it", async () => {
+    const repository = createTestRepository();
+    await repository.createHabit(reading);
+    await repository.createHabit(running);
+    const gate: { open?: (value: undefined) => void } = {};
+    const writeAllowed = new Promise<undefined>((resolve) => {
+      gate.open = resolve;
+    });
+    const slow = {
+      ...repository,
+      setCompletion: async (input: Parameters<typeof repository.setCompletion>[0]) => {
+        await writeAllowed;
+        return repository.setCompletion(input);
+      },
+    };
+    const { user } = renderApp("/", slow);
+    await screen.findByText("Read");
+
+    await user.click(tile("Read"));
+
+    // Not saved yet, but already shown as done.
+    expect(await repository.listCompletions()).toEqual([]);
+    expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
+    expect(progress()).toHaveAttribute("aria-valuetext", "1 of 2 closed");
+
+    gate.open?.(undefined);
+    await waitFor(async () => {
+      expect(await repository.listCompletions()).toMatchObject([{ kind: "full" }]);
+    });
+    expect(tile("Read")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("goes back to what was saved if a tap can't be saved", async () => {
+    const repository = createTestRepository();
+    await repository.createHabit(reading);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const failing = {
+      ...repository,
+      setCompletion: () => Promise.reject(new Error("Disk full")),
+    };
+    const { user } = renderApp("/", failing);
+    await screen.findByText("Read");
+
+    await user.click(tile("Read"));
+
+    await waitFor(() => {
+      expect(tile("Read")).toHaveAttribute("aria-pressed", "false");
+    });
+    expect(error).toHaveBeenCalledWith("Couldn't update habit", expect.any(Error));
+  });
+
   it("celebrates when everything due is done", async () => {
     const repository = createTestRepository();
     await repository.createHabit(reading);

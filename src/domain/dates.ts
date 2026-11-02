@@ -4,8 +4,6 @@ import {
   differenceInCalendarDays,
   endOfMonth as endOfMonthDate,
   format,
-  isValid,
-  parse,
   startOfMonth as startOfMonthDate,
   startOfWeek as startOfWeekDate,
 } from "date-fns";
@@ -20,14 +18,36 @@ export type DateKey = string;
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 const DATE_KEY_FORMAT = "yyyy-MM-dd";
-const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-// Only fills fields missing from the parsed string; a full date key overrides all of them.
-const PARSE_REFERENCE = new Date(0);
+const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+// Date keys are parsed and formatted thousands of times per render (streaks walk
+// every day of a habit's life), so both use plain Date arithmetic: date-fns's
+// generic parse/format is ~40x slower. Results match date-fns exactly
+// (see dates.test.ts), including where DST skips local midnight.
 
 function parseOrNull(value: string): Date | null {
-  if (!DATE_KEY_PATTERN.test(value)) return null;
-  const date = parse(value, DATE_KEY_FORMAT, PARSE_REFERENCE);
-  return isValid(date) ? date : null;
+  const match = DATE_KEY_PATTERN.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  if (month < 0 || month > 11 || day < 1 || day > daysInMonth(year, month)) return null;
+  const date = new Date(0);
+  // setFullYear (unlike the Date constructor) keeps years 0-99 as written.
+  date.setFullYear(year, month, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function daysInMonth(year: number, month: number): number {
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  return month === 1 && leap ? 29 : (DAYS_IN_MONTH[month] ?? 31);
+}
+
+function pad(value: number, length: number): string {
+  return String(value).padStart(length, "0");
 }
 
 export function isDateKey(value: string): boolean {
@@ -45,7 +65,11 @@ export function parseDateKey(key: DateKey): Date {
 
 /** The local calendar date of `date`, never its UTC date. */
 export function toDateKey(date: Date): DateKey {
-  return format(date, DATE_KEY_FORMAT);
+  const year = date.getFullYear();
+  // Same output as date-fns for every 4-digit year; anything else (or an
+  // invalid date, which date-fns rejects) goes through date-fns.
+  if (!(year >= 0 && year <= 9999)) return format(date, DATE_KEY_FORMAT);
+  return `${pad(year, 4)}-${pad(date.getMonth() + 1, 2)}-${pad(date.getDate(), 2)}`;
 }
 
 /** The current local date. The only clock read in the domain layer, so tests can mock it. */

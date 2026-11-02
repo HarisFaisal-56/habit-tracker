@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { OrbitRings, type OrbitRing } from "./OrbitRings";
 
@@ -32,7 +32,45 @@ describe("OrbitRings", () => {
   it("draws a ring of ticks round the outside", () => {
     const { container } = render(<OrbitRings rings={rings} progress={0.5} />);
 
-    expect(container.querySelectorAll("line")).toHaveLength(90);
+    const counts = [...container.querySelectorAll("path[data-ticks]")].map((path) =>
+      Number(path.getAttribute("data-ticks")),
+    );
+    expect(counts.reduce((sum, count) => sum + count, 0)).toBe(90);
+  });
+
+  it("lights the ticks up to the progress once it has appeared", async () => {
+    const { container, rerender } = render(<OrbitRings rings={rings} progress={0.5} />);
+    const reveal = () => container.querySelector("mask circle[data-lit]");
+
+    // Starts dark so the ticks sweep on.
+    expect(reveal()).toHaveAttribute("data-lit", "0");
+    await waitFor(() => {
+      expect(reveal()).toHaveAttribute("data-lit", "0.5");
+    });
+
+    rerender(<OrbitRings rings={rings} progress={0.25} />);
+    expect(reveal()).toHaveAttribute("data-lit", "0.25");
+    expect(container.querySelector("g[mask]")).toHaveAttribute(
+      "mask",
+      `url(#${String(reveal()?.closest("mask")?.id)})`,
+    );
+  });
+
+  it("glides arcs to their length with CSS, starting empty", async () => {
+    const { container } = render(<OrbitRings rings={rings} />);
+    const done = container.querySelectorAll("g[data-ring-fill]")[1];
+    const head = () => done?.querySelector<SVGGElement>("g.orbit-glide")?.style.transform;
+
+    expect(head()).toBe("rotate(-90deg)");
+    await waitFor(() => {
+      expect(head()).toBe("rotate(270deg)");
+    });
+  });
+
+  it("uses no SVG filters, which are slow to repaint on phones", () => {
+    const { container } = render(<OrbitRings rings={rings} progress={1} />);
+
+    expect(container.querySelector("filter, [filter]")).toBeNull();
   });
 
   it("shows its children in the middle and hides the drawing from screen readers", () => {
@@ -43,7 +81,9 @@ describe("OrbitRings", () => {
     );
 
     expect(getByText("1/4")).toBeInTheDocument();
-    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    for (const svg of container.querySelectorAll("svg")) {
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+    }
   });
 
   it("still draws an empty orbit when nothing is due", () => {

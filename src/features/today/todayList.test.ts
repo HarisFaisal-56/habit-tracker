@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { eachDay } from "../../domain/dates";
 import { makeCompletions, makeHabit, on } from "../../test/factories";
-import { buildTodayList, getDayPercent, summarizeItem, type TodayItem } from "./todayList";
+import { getLongestCurrentRun } from "../../domain/stats";
+import {
+  buildTodayList,
+  getDayPercent,
+  getLongestRun,
+  summarizeItem,
+  type TodayItem,
+} from "./todayList";
 
 const today = "2025-01-08"; // Wednesday
 
@@ -131,5 +138,32 @@ describe("getDayPercent", () => {
 
   it("is zero when nothing is due", () => {
     expect(getDayPercent({ closed: 0, minimum: 0, due: 0 })).toBe(0);
+  });
+});
+
+describe("getLongestRun", () => {
+  it("matches getLongestCurrentRun for the same habits", () => {
+    const habits = [
+      makeHabit({ id: "daily" }),
+      makeHabit({ id: "wed", schedule: { type: "days", days: [3] } }),
+      makeHabit({ id: "fri", schedule: { type: "days", days: [5] } }), // not due today
+      makeHabit({ id: "weekly", schedule: { type: "weekly", timesPerWeek: 1 } }),
+      makeHabit({ id: "archived", archived: true }),
+    ];
+    const completions = [
+      ...makeCompletions("daily", on("full", ...eachDay("2025-01-04", today))),
+      ...makeCompletions("fri", on("full", "2025-01-03")),
+      ...makeCompletions("weekly", on("full", "2025-01-02", "2025-01-07")),
+      ...makeCompletions("archived", on("full", ...eachDay("2025-01-01", today))),
+    ];
+
+    const list = buildTodayList(habits, completions, today);
+
+    expect(getLongestRun(list)).toBe(getLongestCurrentRun(habits, completions, today));
+    expect(getLongestRun(list)).toBe(5);
+  });
+
+  it("is zero with no runs", () => {
+    expect(getLongestRun(buildTodayList([makeHabit()], [], today))).toBe(0);
   });
 });

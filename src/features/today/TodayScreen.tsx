@@ -1,30 +1,32 @@
 import clsx from "clsx";
 import { format, getDayOfYear } from "date-fns";
 import { Check } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import { useToday } from "../../app/useToday";
 import { EmptyState } from "../../components/EmptyState";
 import type { StyleWithVars } from "../../components/habitColors";
 import { OrbitRings } from "../../components/OrbitRings";
 import { Screen } from "../../components/Screen";
-import { useReducedMotion } from "../../components/useReducedMotion";
 import { useRepository } from "../../data/RepositoryContext";
 import { useCompletions, useHabits } from "../../data/useData";
 import { isDone } from "../../domain/completions";
 import { parseDateKey } from "../../domain/dates";
-import { getLongestCurrentRun, type TodayProgress } from "../../domain/stats";
+import type { Completion } from "../../domain/habit";
+import type { TodayProgress } from "../../domain/stats";
 import { useSettings } from "../../store/settingsStore";
 import { AddHabitLink } from "../habits/AddHabitLink";
 import { ReviewPrompt } from "../review/ReviewPrompt";
 import { HabitTile } from "./HabitTile";
 import { LogSheet } from "./LogSheet";
 import { Welcome } from "./Welcome";
-import { buildTodayList, getDayPercent, type TodayItem } from "./todayList";
+import { buildTodayList, getDayPercent, getLongestRun, type TodayItem } from "./todayList";
+import { usePendingCompletions } from "./usePendingCompletions";
 
 export function TodayScreen() {
   const today = useToday();
   const habits = useHabits();
-  const completions = useCompletions();
+  // Taps show straight away, before the database has saved them.
+  const { completions, track } = usePendingCompletions(useCompletions());
   const repository = useRepository();
   const welcomeDismissed = useSettings((state) => state.welcomeDismissed);
   const [optionsFor, setOptionsFor] = useState<string | null>(null);
@@ -34,21 +36,24 @@ export function TodayScreen() {
     () => (habits && completions ? buildTodayList(habits, completions, today) : undefined),
     [habits, completions, today],
   );
-  const run = useMemo(
-    () => (habits && completions ? getLongestCurrentRun(habits, completions, today) : 0),
-    [habits, completions, today],
-  );
+  const run = list ? getLongestRun(list) : 0;
   const optionsItem = list && [...list.due, ...list.other].find((i) => i.habit.id === optionsFor);
 
   const toggle = ({ habit, completion }: TodayItem) => {
-    const change = isDone(completion)
-      ? repository.clearCompletion(habit.id, today)
-      : repository.setCompletion({
+    const note = completion?.note;
+    const next: Completion | null = isDone(completion)
+      ? null
+      : {
+          id: completion?.id ?? `pending-${habit.id}`,
           habitId: habit.id,
           date: today,
           kind: "full",
-          note: completion?.note,
-        });
+          ...(note === undefined ? {} : { note }),
+        };
+    const change = next
+      ? repository.setCompletion({ habitId: habit.id, date: today, kind: "full", note })
+      : repository.clearCompletion(habit.id, today);
+    track({ habitId: habit.id, date: today, completion: next }, change);
     change.catch((error: unknown) => {
       console.error("Couldn't update habit", error);
     });
@@ -160,30 +165,26 @@ function RunBadge({ days }: { days: number }) {
   );
 }
 
-/** A ring with a planet circling it, as on the run badge in the design. */
+/**
+ * A ring with a planet circling it, as on the run badge in the design. The
+ * planet spins on its own layer (a CSS animation the GPU runs without repainting).
+ */
 function OrbitIcon() {
-  const reduced = useReducedMotion();
   return (
-    <svg
-      viewBox="0 0 20 20"
+    <span
       aria-hidden="true"
-      className="size-4.5 overflow-visible text-accent-text drop-shadow-[0_0_4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]"
+      className="relative size-4.5 text-accent-text drop-shadow-[0_0_4px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]"
     >
-      <circle cx="10" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-      <g>
-        <circle cx="10" cy="4" r="2.5" fill="currentColor" />
-        {!reduced && (
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            from="0 10 11"
-            to="360 10 11"
-            dur="9s"
-            repeatCount="indefinite"
-          />
-        )}
-      </g>
-    </svg>
+      <svg viewBox="0 0 20 20" className="absolute inset-0 size-full overflow-visible">
+        <circle cx="10" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
+      </svg>
+      {/* Turns about the ring's centre, (10, 11) in the 20 x 20 box. */}
+      <span className="absolute inset-0 origin-[50%_55%] animate-planet">
+        <svg viewBox="0 0 20 20" className="size-full overflow-visible">
+          <circle cx="10" cy="4" r="2.5" fill="currentColor" />
+        </svg>
+      </span>
+    </span>
   );
 }
 
@@ -224,7 +225,15 @@ function Burst() {
   );
 }
 
-function OrbitCard({ items, progress }: { items: TodayItem[]; progress: TodayProgress }) {
+// Memoised: when Today re-renders with the same list (e.g. the database echoing a
+// tap that's already showing), the rings aren't redrawn mid-glide.
+const OrbitCard = memo(function OrbitCard({
+  items,
+  progress,
+}: {
+  items: TodayItem[];
+  progress: TodayProgress;
+}) {
   const { closed, minimum, due } = progress;
   // Only full completions close an orbit; the minimum version counts for the
   // streak but is shown separately.
@@ -319,7 +328,7 @@ function OrbitCard({ items, progress }: { items: TodayItem[]; progress: TodayPro
       {due > 0 && <ProgressStrip closed={closed} minimum={minimum} open={open} />}
     </div>
   );
-}
+});
 
 /** Closed, minimum and open counts under the rings. */
 function ProgressStrip({ closed, minimum, open }: Record<"closed" | "minimum" | "open", number>) {
@@ -348,7 +357,7 @@ function ProgressStrip({ closed, minimum, open }: Record<"closed" | "minimum" | 
     },
   ];
   return (
-    <div aria-hidden="true" className="card grid w-full grid-cols-3 rounded-tile backdrop-blur-md">
+    <div aria-hidden="true" className="card grid w-full grid-cols-3 rounded-tile">
       {cells.map(({ count, label, mark }, index) => (
         <div
           key={label}
